@@ -5,14 +5,13 @@
 
 const SUPABASE_URL = "https://ozejxesdcuyypkrxamnd.supabase.co";
 
-// Vercel 환경변수가 브라우저 JS에 직접 전달되는 구조가 아니라
-// 현재는 Supabase anon key를 여기에 넣어야 합니다.
-// 보안을 위해 실제 키는 아래 부분에 직접 넣어주세요.
+// 현재 사용 중인 Supabase anon key를 여기에 넣어주세요.
+// 기존에 사용하던 키를 그대로 사용하면 됩니다.
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im96ZWp4ZXNkY3V5eXBrcnhhbW5kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk1NjE3MjksImV4cCI6MjEwNTEzNzcyOX0.Fcxd4ScWmJn7ZmfSmFyrNOX0MvXoZBSDn52uLV8R3GQ";
 
-// Supabase REST API 주소
 const ASSETS_API = `${SUPABASE_URL}/rest/v1/assets`;
 const LIABILITIES_API = `${SUPABASE_URL}/rest/v1/liabilities`;
+
 
 // ========================================
 // 공통 헤더
@@ -27,93 +26,143 @@ function getHeaders() {
   };
 }
 
+
 // ========================================
 // 페이지 시작
 // ========================================
 
-document.addEventListener("DOMContentLoaded", () => {
-  loadData();
+document.addEventListener("DOMContentLoaded", function () {
 
-  document
-    .getElementById("add-asset-btn")
-    .addEventListener("click", () => {
+  console.log("자산관리 앱 시작");
+
+  const assetButton = document.getElementById("add-asset-btn");
+  const debtButton = document.getElementById("add-debt-btn");
+
+  if (!assetButton) {
+    console.error("add-asset-btn을 찾을 수 없습니다.");
+  }
+
+  if (!debtButton) {
+    console.error("add-debt-btn을 찾을 수 없습니다.");
+  }
+
+  if (assetButton) {
+    assetButton.addEventListener("click", function () {
+      console.log("자산 추가 버튼 클릭");
       addItem("asset");
     });
+  }
 
-  document
-    .getElementById("add-debt-btn")
-    .addEventListener("click", () => {
+  if (debtButton) {
+    debtButton.addEventListener("click", function () {
+      console.log("부채 추가 버튼 클릭");
       addItem("debt");
     });
+  }
+
+  loadData();
 });
 
+
 // ========================================
-// 전체 데이터 불러오기
+// 데이터 불러오기
 // ========================================
 
 async function loadData() {
-  try {
-    const [assetsResponse, liabilitiesResponse] = await Promise.all([
-      fetch(`${ASSETS_API}?select=*&order=created_at.asc`, {
-        method: "GET",
-        headers: getHeaders()
-      }),
 
-      fetch(`${LIABILITIES_API}?select=*&order=created_at.asc`, {
+  console.log("Supabase 데이터 불러오는 중...");
+
+  try {
+
+    const assetsResponse = await fetch(
+      `${ASSETS_API}?select=*&order=created_at.asc`,
+      {
         method: "GET",
         headers: getHeaders()
-      })
-    ]);
+      }
+    );
+
+    console.log("자산 API 상태:", assetsResponse.status);
 
     if (!assetsResponse.ok) {
-      throw new Error(await assetsResponse.text());
+      const errorText = await assetsResponse.text();
+      console.error("자산 API 오류:", errorText);
+      throw new Error(errorText);
     }
 
+    const liabilitiesResponse = await fetch(
+      `${LIABILITIES_API}?select=*&order=created_at.asc`,
+      {
+        method: "GET",
+        headers: getHeaders()
+      }
+    );
+
+    console.log("부채 API 상태:", liabilitiesResponse.status);
+
     if (!liabilitiesResponse.ok) {
-      throw new Error(await liabilitiesResponse.text());
+      const errorText = await liabilitiesResponse.text();
+      console.error("부채 API 오류:", errorText);
+      throw new Error(errorText);
     }
 
     const assets = await assetsResponse.json();
     const liabilities = await liabilitiesResponse.json();
+
+    console.log("불러온 자산:", assets);
+    console.log("불러온 부채:", liabilities);
 
     renderAssets(assets);
     renderLiabilities(liabilities);
     updateSummary(assets, liabilities);
 
   } catch (error) {
+
     console.error("데이터 불러오기 실패:", error);
 
     alert(
       "Supabase에서 데이터를 불러오지 못했습니다.\n\n" +
-      "Supabase URL과 API Key를 확인해주세요."
+      "Supabase URL 또는 API Key를 확인해주세요."
     );
   }
 }
 
+
 // ========================================
-// 자산 화면 출력
+// 자산 출력
 // ========================================
 
 function renderAssets(assets) {
+
   const list = document.getElementById("asset-list");
 
+  if (!list) {
+    console.error("asset-list를 찾을 수 없습니다.");
+    return;
+  }
+
   if (!assets || assets.length === 0) {
+
     list.innerHTML = `
       <div class="empty">
         등록된 자산이 없습니다.
       </div>
     `;
+
     return;
   }
 
   list.innerHTML = "";
 
-  assets.forEach(asset => {
+  assets.forEach(function (asset) {
+
     const item = document.createElement("div");
+
     item.className = "asset-item";
 
     item.innerHTML = `
       <div class="asset-info">
+
         <div class="asset-name">
           ${escapeHtml(asset.name)}
         </div>
@@ -121,9 +170,11 @@ function renderAssets(assets) {
         <div class="asset-category">
           ${escapeHtml(asset.category || "")}
         </div>
+
       </div>
 
       <div class="asset-right">
+
         <strong>
           ${formatMoney(asset.amount)}
         </strong>
@@ -134,37 +185,51 @@ function renderAssets(assets) {
         >
           삭제
         </button>
+
       </div>
     `;
 
     list.appendChild(item);
+
   });
 }
 
+
 // ========================================
-// 부채 화면 출력
+// 부채 출력
 // ========================================
 
 function renderLiabilities(liabilities) {
+
   const list = document.getElementById("debt-list");
 
+  if (!list) {
+    console.error("debt-list를 찾을 수 없습니다.");
+    return;
+  }
+
   if (!liabilities || liabilities.length === 0) {
+
     list.innerHTML = `
       <div class="empty">
         등록된 부채가 없습니다.
       </div>
     `;
+
     return;
   }
 
   list.innerHTML = "";
 
-  liabilities.forEach(debt => {
+  liabilities.forEach(function (debt) {
+
     const item = document.createElement("div");
+
     item.className = "asset-item";
 
     item.innerHTML = `
       <div class="asset-info">
+
         <div class="asset-name">
           ${escapeHtml(debt.name)}
         </div>
@@ -172,9 +237,11 @@ function renderLiabilities(liabilities) {
         <div class="asset-category">
           ${escapeHtml(debt.category || "")}
         </div>
+
       </div>
 
       <div class="asset-right">
+
         <strong>
           ${formatMoney(debt.amount)}
         </strong>
@@ -185,30 +252,38 @@ function renderLiabilities(liabilities) {
         >
           삭제
         </button>
+
       </div>
     `;
 
     list.appendChild(item);
+
   });
 }
 
+
 // ========================================
-// 총자산 / 총부채 / 순자산 계산
+// 총액 계산
 // ========================================
 
 function updateSummary(assets, liabilities) {
 
-  const totalAssets = assets.reduce(
-    (sum, item) => sum + Number(item.amount || 0),
-    0
-  );
+  const totalAssets = assets.reduce(function (sum, item) {
 
-  const totalDebt = liabilities.reduce(
-    (sum, item) => sum + Number(item.amount || 0),
-    0
-  );
+    return sum + Number(item.amount || 0);
+
+  }, 0);
+
+
+  const totalDebt = liabilities.reduce(function (sum, item) {
+
+    return sum + Number(item.amount || 0);
+
+  }, 0);
+
 
   const netAssets = totalAssets - totalDebt;
+
 
   document.getElementById("total-assets").textContent =
     formatMoney(totalAssets);
@@ -220,61 +295,86 @@ function updateSummary(assets, liabilities) {
     formatMoney(netAssets);
 }
 
+
 // ========================================
 // 자산 / 부채 추가
 // ========================================
 
 async function addItem(type) {
 
+  console.log("addItem 실행:", type);
+
   const isAsset = type === "asset";
 
+
+  // 이름
   const name = prompt(
     isAsset
       ? "자산 이름을 입력하세요.\n예: 우리집 아파트"
       : "부채 이름을 입력하세요.\n예: 주택담보대출"
   );
 
+
   if (name === null) {
     return;
   }
 
+
   const trimmedName = name.trim();
 
+
   if (!trimmedName) {
+
     alert("이름을 입력해주세요.");
+
     return;
   }
 
+
+  // 종류
   const category = prompt(
     isAsset
       ? "자산 종류를 입력하세요.\n예: 부동산 / 주식 / 예금 / 현금 / 기타"
       : "부채 종류를 입력하세요.\n예: 주택담보대출 / 신용대출 / 기타"
   );
 
+
   if (category === null) {
     return;
   }
 
+
   const trimmedCategory = category.trim();
 
+
+  // 금액
   const amountText = prompt(
     isAsset
       ? "자산 금액을 입력하세요.\n예: 2000000000"
       : "부채 금액을 입력하세요.\n예: 130000000"
   );
 
+
   if (amountText === null) {
     return;
   }
 
+
   const amount = Number(
-    amountText.replace(/,/g, "").replace(/원/g, "").trim()
+    amountText
+      .replace(/,/g, "")
+      .replace(/원/g, "")
+      .trim()
   );
 
+
   if (!Number.isFinite(amount) || amount < 0) {
+
     alert("올바른 금액을 입력해주세요.");
+
     return;
   }
+
 
   const data = {
     name: trimmedName,
@@ -282,27 +382,48 @@ async function addItem(type) {
     amount: amount
   };
 
+
+  console.log("Supabase에 저장할 데이터:", data);
+
+
   try {
 
     const url = isAsset
       ? ASSETS_API
       : LIABILITIES_API;
 
+
     const response = await fetch(url, {
+
       method: "POST",
+
       headers: getHeaders(),
+
       body: JSON.stringify(data)
+
     });
 
+
+    console.log("등록 API 상태:", response.status);
+
+
     if (!response.ok) {
+
       const errorText = await response.text();
 
-      console.error("Supabase 오류:", errorText);
+      console.error("Supabase 등록 오류:", errorText);
 
       throw new Error(errorText);
     }
 
+
+    const result = await response.json();
+
+    console.log("등록 성공:", result);
+
+
     await loadData();
+
 
     alert(
       isAsset
@@ -310,32 +431,37 @@ async function addItem(type) {
         : "부채가 등록되었습니다."
     );
 
+
   } catch (error) {
 
     console.error("등록 실패:", error);
 
     alert(
       "등록하지 못했습니다.\n\n" +
-      "Supabase 연결 상태와 RLS 정책을 확인해주세요."
+      error.message
     );
   }
 }
 
+
 // ========================================
-// 자산 / 부채 삭제
+// 삭제
 // ========================================
 
 async function deleteItem(type, id) {
 
   const isAsset = type === "asset";
 
+
   const message = isAsset
     ? "이 자산을 삭제하시겠습니까?"
     : "이 부채를 삭제하시겠습니까?";
 
+
   if (!confirm(message)) {
     return;
   }
+
 
   try {
 
@@ -343,20 +469,28 @@ async function deleteItem(type, id) {
       ? `${ASSETS_API}?id=eq.${id}`
       : `${LIABILITIES_API}?id=eq.${id}`;
 
+
     const response = await fetch(url, {
+
       method: "DELETE",
+
       headers: getHeaders()
+
     });
 
+
     if (!response.ok) {
+
       const errorText = await response.text();
 
-      console.error("Supabase 삭제 오류:", errorText);
+      console.error("삭제 오류:", errorText);
 
       throw new Error(errorText);
     }
 
+
     await loadData();
+
 
   } catch (error) {
 
@@ -364,10 +498,11 @@ async function deleteItem(type, id) {
 
     alert(
       "삭제하지 못했습니다.\n\n" +
-      "Supabase 연결 상태를 확인해주세요."
+      error.message
     );
   }
 }
+
 
 // ========================================
 // 금액 표시
@@ -377,10 +512,9 @@ function formatMoney(amount) {
 
   const number = Number(amount || 0);
 
-  return (
-    number.toLocaleString("ko-KR") + "원"
-  );
+  return number.toLocaleString("ko-KR") + "원";
 }
+
 
 // ========================================
 // HTML 특수문자 처리
