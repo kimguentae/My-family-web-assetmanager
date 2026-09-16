@@ -1,3 +1,4 @@
+```css
 * {
   box-sizing: border-box;
 }
@@ -110,16 +111,64 @@ button:hover {
   border-radius: 10px;
 }
 
+/* ================================
+   자산 / 부채 항목
+================================ */
+
 .asset-item {
   display: flex;
+  align-items: center;
   justify-content: space-between;
   padding: 16px;
   border-bottom: 1px solid #eee;
+  gap: 20px;
 }
 
 .asset-item:last-child {
   border-bottom: none;
 }
+
+.asset-info {
+  min-width: 0;
+  flex: 1;
+}
+
+.asset-name {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 5px;
+  word-break: break-word;
+}
+
+.asset-category {
+  font-size: 13px;
+  color: #888;
+}
+
+.asset-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  white-space: nowrap;
+}
+
+.asset-right strong {
+  font-size: 16px;
+}
+
+.delete-btn {
+  background: #ef4444;
+  padding: 7px 11px;
+  font-size: 12px;
+}
+
+.delete-btn:hover {
+  background: #dc2626;
+}
+
+/* ================================
+   푸터
+================================ */
 
 footer {
   text-align: center;
@@ -127,16 +176,80 @@ footer {
   color: #999;
 }
 
+/* ================================
+   모바일
+================================ */
+
 @media (max-width: 700px) {
+
+  .container {
+    width: min(100% - 20px, 1000px);
+    margin: 20px auto;
+  }
+
   .summary {
     grid-template-columns: 1fr;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .card {
+    padding: 20px;
+  }
+
+  .card strong {
+    font-size: 23px;
+  }
+
+  .header {
+    padding: 25px 15px;
   }
 
   .header h1 {
     font-size: 24px;
   }
 
+  .section {
+    padding: 18px;
+  }
+
   .section-title {
     gap: 10px;
   }
+
+  .section-title h2 {
+    font-size: 18px;
+  }
+
+  .section-title button {
+    padding: 9px 12px;
+    font-size: 13px;
+  }
+
+  .asset-item {
+    padding: 14px 5px;
+    gap: 10px;
+  }
+
+  .asset-name {
+    font-size: 15px;
+  }
+
+  .asset-category {
+    font-size: 12px;
+  }
+
+  .asset-right {
+    gap: 8px;
+  }
+
+  .asset-right strong {
+    font-size: 14px;
+  }
+
+  .delete-btn {
+    padding: 6px 8px;
+    font-size: 11px;
+  }
 }
+```
