@@ -120,8 +120,8 @@ async function loadData() {
     console.error("데이터 불러오기 실패:", error);
 
     alert(
-      "Supabase에서 데이터를 불러오지 못했습니다.\n\n" +
-      "Supabase URL 또는 API Key를 확인해주세요."
+  "Supabase 오류가 발생했습니다.\n\n" +
+  error.message
     );
   }
 }
