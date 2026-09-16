@@ -8,7 +8,7 @@ const SUPABASE_URL = "https://ozejxesdcuyypkrxamnd.supabase.co";
 // Vercel 환경변수가 브라우저 JS에 직접 전달되는 구조가 아니라
 // 현재는 Supabase anon key를 여기에 넣어야 합니다.
 // 보안을 위해 실제 키는 아래 부분에 직접 넣어주세요.
-const SUPABASE_ANON_KEY = "여기에_현재_사용중인_anon_key";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im96ZWp4ZXNkY3V5eXBrcnhhbW5kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk1NjE3MjksImV4cCI6MjEwNTEzNzcyOX0.Fcxd4ScWmJn7ZmfSmFyrNOX0MvXoZBSDn52uLV8R3GQ";
 
 // Supabase REST API 주소
 const ASSETS_API = `${SUPABASE_URL}/rest/v1/assets`;
