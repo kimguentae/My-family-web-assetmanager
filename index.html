@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>우리 가족 자산관리</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header class="header">
+    <h1>우리 가족 자산관리</h1>
+    <p>우리 가족의 자산을 한눈에 관리하세요.</p>
+  </header>
+
+  <main class="container">
+
+    <section class="summary">
+      <div class="card">
+        <span>총 자산</span>
+        <strong id="total-assets">0원</strong>
+      </div>
+
+      <div class="card">
+        <span>총 부채</span>
+        <strong id="total-debt">0원</strong>
+      </div>
+
+      <div class="card highlight">
+        <span>순자산</span>
+        <strong id="net-assets">0원</strong>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-title">
+        <h2>내 자산</h2>
+        <button id="add-asset-btn">+ 자산 추가</button>
+      </div>
+
+      <div id="asset-list" class="asset-list">
+        <div class="empty">
+          등록된 자산이 없습니다.
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-title">
+        <h2>내 부채</h2>
+        <button id="add-debt-btn">+ 부채 추가</button>
+      </div>
+
+      <div id="debt-list" class="asset-list">
+        <div class="empty">
+          등록된 부채가 없습니다.
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer>
+    <p>My Family Asset Manager</p>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
