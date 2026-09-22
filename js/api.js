@@ -13,15 +13,8 @@ const DEFAULT_TREE = [
         id: "asset_realestate",
         name: "부동산",
         type: "asset",
-
         children: [
-
-            {
-                id: "apt",
-                name: "아파트",
-                children: []
-            }
-
+            { id: "apt", name: "아파트", children: [] }
         ]
     },
 
@@ -30,15 +23,10 @@ const DEFAULT_TREE = [
         id: "asset_investment",
         name: "투자자산",
         type: "asset",
-
         children: [
-
             { id: "koreaStock", name: "국내주식", children: [] },
-
             { id: "usStock", name: "미국주식", currency: "USD", children: [] },
-
             { id: "coin", name: "코인", children: [] }
-
         ]
     },
 
@@ -47,17 +35,11 @@ const DEFAULT_TREE = [
         id: "asset_cash",
         name: "현금성자산",
         type: "asset",
-
         children: [
-
             { id: "shinhanCash", name: "신한은행", children: [] },
-
             { id: "krBroker", name: "증권계좌(₩)", children: [] },
-
             { id: "usBroker", name: "증권계좌($)", currency: "USD", children: [] },
-
             { id: "momCard", name: "엄마카드", children: [] }
-
         ]
     },
 
@@ -66,13 +48,9 @@ const DEFAULT_TREE = [
         id: "asset_cashgift",
         name: "현금 및 상품권",
         type: "asset",
-
         children: [
-
             { id: "cashMoney", name: "현금", children: [] },
-
             { id: "giftCard", name: "상품권", children: [] }
-
         ]
     },
 
@@ -81,13 +59,9 @@ const DEFAULT_TREE = [
         id: "asset_etc",
         name: "기타자산",
         type: "asset",
-
         children: [
-
             { id: "retirementGeuntae", name: "퇴직공제금(근태)", children: [] },
-
             { id: "retirementMiran", name: "퇴직공제금(미란)", children: [] }
-
         ]
     },
 
@@ -96,11 +70,8 @@ const DEFAULT_TREE = [
         id: "debt_mortgage",
         name: "주택담보대출",
         type: "debt",
-
         children: [
-
             { id: "mortgageShinhan", name: "신한은행", children: [] }
-
         ]
     },
 
@@ -109,15 +80,10 @@ const DEFAULT_TREE = [
         id: "debt_credit",
         name: "신용대출",
         type: "debt",
-
         children: [
-
             { id: "mgLoan", name: "새마을금고", children: [] },
-
             { id: "shinhanLoan", name: "신한은행", children: [] },
-
             { id: "kbLoan", name: "국민은행", children: [] }
-
         ]
     }
 
@@ -153,6 +119,8 @@ document.addEventListener(
         initSave();
 
         initNetWorthStack();
+
+        initGlobalSwipeReset();
 
         renderInput();
 
@@ -254,6 +222,8 @@ function initNavigation() {
                     "click",
                     function () {
 
+                        closeAllSwipes();
+
                         const page = this.dataset.page;
 
 
@@ -299,7 +269,7 @@ function initNavigation() {
 
 
 /* ==================================================
-   홈 순자산 카드 스택 (가로 스와이프)
+   홈 순자산 카드 스택
 ================================================== */
 
 function initNetWorthStack() {
@@ -365,6 +335,52 @@ function initNetWorthStack() {
 
 
 /* ==================================================
+   전역 스와이프 리셋
+   (다른 곳 터치 시 열린 스와이프 닫기)
+================================================== */
+
+function initGlobalSwipeReset() {
+
+    document.addEventListener(
+        "touchstart",
+        function (e) {
+
+            const swipedContent =
+                e.target.closest(".swipe-content.swiped");
+
+
+            if (!swipedContent) {
+
+                closeAllSwipes();
+
+            }
+
+        },
+        { passive: true }
+    );
+
+
+    document.addEventListener(
+        "mousedown",
+        function (e) {
+
+            const swipedContent =
+                e.target.closest(".swipe-content.swiped");
+
+
+            if (!swipedContent) {
+
+                closeAllSwipes();
+
+            }
+
+        }
+    );
+
+}
+
+
+/* ==================================================
    저장
 ================================================== */
 
@@ -391,6 +407,9 @@ async function saveAll() {
     }
 
 
+    closeAllSwipes();
+
+
     button.disabled = true;
 
     button.textContent = "저장 중...";
@@ -412,7 +431,6 @@ async function saveAll() {
 
     saveTree();
 
-    // 홈 데이터만 갱신 (입력탭은 다시 그리지 않음 → 접힘 상태 유지)
     updateHome();
 
 
@@ -544,7 +562,7 @@ function renderInput() {
 
 
 /* ==================================================
-   자산 / 부채 영역
+   자산 / 부채 영역 (스와이프 → 대분류 추가)
 ================================================== */
 
 function createInputSection(type, name, container) {
@@ -557,9 +575,14 @@ function createInputSection(type, name, container) {
     card.className = "input-tree-card";
 
 
+    const swiper = document.createElement("div");
+
+    swiper.className = "swipe-row";
+
+
     const header = document.createElement("div");
 
-    header.className = "input-section-header";
+    header.className = "input-section-header swipe-content";
 
 
     header.innerHTML = `
@@ -582,6 +605,24 @@ function createInputSection(type, name, container) {
     `;
 
 
+    const actions = createSwipeActions(
+        [
+            {
+                label: "추가",
+                cls: "add",
+                onClick: () => addRoot(type)
+            }
+        ]
+    );
+
+
+    swiper.appendChild(actions);
+    swiper.appendChild(header);
+
+
+    attachSwipe(swiper, header, actions);
+
+
     const list = document.createElement("div");
 
     list.className = "input-section-list";
@@ -590,6 +631,11 @@ function createInputSection(type, name, container) {
     header.addEventListener(
         "click",
         function () {
+
+            if (header.dataset.swiped === "1") {
+                header.dataset.swiped = "0";
+                return;
+            }
 
             header.classList.toggle("open");
             list.classList.toggle("open");
@@ -607,7 +653,7 @@ function createInputSection(type, name, container) {
     );
 
 
-    card.appendChild(header);
+    card.appendChild(swiper);
     card.appendChild(list);
     container.appendChild(card);
 
@@ -615,7 +661,7 @@ function createInputSection(type, name, container) {
 
 
 /* ==================================================
-   대분류 (스와이프 → 추가 액션)
+   대분류 (스와이프 → 추가)
 ================================================== */
 
 function createRootElement(root) {
@@ -973,7 +1019,7 @@ function createChildElement(child) {
 
 
 /* ==================================================
-   스와이프 액션 버튼 생성
+   스와이프 액션 버튼 생성 (원형)
 ================================================== */
 
 function createSwipeActions(items) {
@@ -1062,7 +1108,10 @@ function attachSwipe(wrapper, content, actions) {
             return w;
         }
 
-        return actions.children.length * 62;
+        // fallback: 원형 버튼 44px + gap 8 + padding 12
+        const count = actions.children.length;
+
+        return count * 44 + (count - 1) * 8 + 12;
 
     }
 
@@ -1213,7 +1262,6 @@ function attachSwipe(wrapper, content, actions) {
     content.addEventListener("touchcancel", onEnd);
 
 
-    // 데스크탑 마우스 지원
     content.addEventListener("mousedown", onStart);
     content.addEventListener("mousemove", onMove);
     content.addEventListener("mouseup", onEnd);
@@ -1367,7 +1415,7 @@ function updateTotalsRealtime() {
 
 
 /* ==================================================
-   중분류 직접 입력값
+   중분류 직접 입력값 / 합계
 ================================================== */
 
 function getMiddleDirectValue(middle) {
@@ -1384,10 +1432,6 @@ function getMiddleDirectValue(middle) {
 
 }
 
-
-/* ==================================================
-   중분류 합계
-================================================== */
 
 function getMiddleTotal(middle) {
 
@@ -1417,10 +1461,6 @@ function getMiddleTotal(middle) {
 }
 
 
-/* ==================================================
-   대분류 합계
-================================================== */
-
 function getRootTotal(root) {
 
     let total = 0;
@@ -1440,10 +1480,6 @@ function getRootTotal(root) {
 
 }
 
-
-/* ==================================================
-   대분류 화면 금액 갱신
-================================================== */
 
 function updateRootTotal(root) {
 
@@ -1612,31 +1648,6 @@ function addChild(middleId) {
 }
 
 
-function editRoot(id) {
-
-    const root = findRoot(id);
-
-    if (!root) {
-        return;
-    }
-
-
-    const name = prompt("대분류 이름 수정", root.name);
-
-    if (!name || !name.trim()) {
-        return;
-    }
-
-
-    root.name = name.trim();
-
-    saveTree();
-    renderInput();
-    updateHome();
-
-}
-
-
 function editMiddle(id) {
 
     const middle = findMiddle(id);
@@ -1682,48 +1693,6 @@ function editChild(id) {
 
 
     child.name = name.trim();
-
-    saveTree();
-    renderInput();
-    updateHome();
-
-}
-
-
-function deleteRoot(id) {
-
-    const root = findRoot(id);
-
-    if (!root) {
-        return;
-    }
-
-
-    const ids = getAllIdsFromRoot(root);
-
-    const values = getLocalValues();
-
-
-    const hasValue = ids.some(id => Number(values[id] || 0) !== 0);
-
-
-    let message = `"${root.name}"을 삭제할까요?`;
-
-
-    if (hasValue) {
-        message += "\n\n입력된 금액도 함께 사라집니다.";
-    }
-
-
-    if (!confirm(message)) {
-        return;
-    }
-
-
-    tree = tree.filter(item => item.id !== id);
-
-
-    removeValues(ids);
 
     saveTree();
     renderInput();
@@ -2053,8 +2022,7 @@ function renderHome(roots, containerId, values, isDebt) {
             const list = document.createElement("div");
 
             list.className = "subcategory-list";
-
-            // 기본 접힘
+            // 기본 접힘 (open 클래스 없음)
 
 
             header.addEventListener(
@@ -2109,6 +2077,7 @@ function renderHome(roots, containerId, values, isDebt) {
                         const children = document.createElement("div");
 
                         children.className = "subcategory-list";
+                        // 기본 접힘
 
 
                         middleHeader.addEventListener(
