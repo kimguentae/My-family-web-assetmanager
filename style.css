@@ -1364,3 +1364,50 @@ button {
 
     .goal-input-label { flex-basis: 110px; font-size: 12px; }
 }
+
+/* =========================
+   SETTINGS ACCORDION
+========================= */
+
+.settings-card.collapsible {
+    padding: 0;
+    overflow: hidden;
+}
+
+.settings-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 18px 16px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.settings-card-header .settings-title {
+    margin-bottom: 4px;
+}
+
+.settings-card-header .settings-desc {
+    margin-bottom: 0;
+}
+
+.settings-card-arrow {
+    font-size: 22px;
+    color: #999;
+    transition: transform .2s ease;
+    flex: 0 0 auto;
+}
+
+.settings-card.collapsible.open .settings-card-arrow {
+    transform: rotate(90deg);
+}
+
+.settings-card-body {
+    display: none;
+    padding: 0 16px 16px;
+}
+
+.settings-card.collapsible.open .settings-card-body {
+    display: block;
+}

@@ -10,6 +10,7 @@
 const SUPABASE_URL = "https://ozejxesdcuyypkrxamnd.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im96ZWp4ZXNkY3V5eXBrcnhhbW5kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk1NjE3MjksImV4cCI6MjEwNTEzNzcyOX0.Fcxd4ScWmJn7ZmfSmFyrNOX0MvXoZBSDn52uLV8R3GQ";
 
+
 const supabaseClient = window.supabase.createClient(
     SUPABASE_URL,
     SUPABASE_ANON_KEY
@@ -1598,6 +1599,22 @@ function initSettings() {
 function renderSettings() {
     renderGoalSettings();
     renderAnalysisSettings();
+    initSettingsAccordion();
+}
+
+
+function initSettingsAccordion() {
+    document.querySelectorAll(".settings-card.collapsible .settings-card-header")
+        .forEach(header => {
+            if (header.dataset.bound === "1") return;
+            header.dataset.bound = "1";
+
+            header.addEventListener("click", function () {
+                const card = header.closest(".settings-card");
+                if (!card) return;
+                card.classList.toggle("open");
+            });
+        });
 }
 
 
@@ -1908,7 +1925,7 @@ function getHistoryMetrics(record) {
         asset: totalAsset,
         debt: totalDebt,
         netWorth: totalAsset - totalDebt,
-        assetExcludingRealEstate: totalAsset - realEstate,
+        assetExcludingRealEstate: (totalAsset - totalDebt) - realEstate,
         stocks: stocks,
         coin: coin,
         realEstate: realEstate,
@@ -2780,13 +2797,24 @@ function formatFullDate(date) {
 
 
 /* ==================================================
-   Resize
+   Resize — 차트만 다시 그리기 (스크롤 초기화 방지)
 ================================================== */
+
+let resizeTimer = null;
 
 window.addEventListener("resize", function () {
     const page = document.getElementById("analysisPage");
 
-    if (page && page.classList.contains("active-page") && analysisLoaded) {
-        renderAnalysis();
-    }
+    if (!page || !page.classList.contains("active-page") || !analysisLoaded) return;
+
+    clearTimeout(resizeTimer);
+
+    resizeTimer = setTimeout(function () {
+        if (document.getElementById("netWorthChart"))       drawNetWorthChart();
+        if (document.getElementById("assetDebtChart"))      drawAssetDebtChart();
+        if (document.getElementById("investmentChart"))     drawInvestmentChart();
+        if (document.getElementById("debtRepayChart"))      drawDebtRepayChart();
+        if (document.getElementById("allocationChart"))     drawAllocationChart();
+        if (document.getElementById("monthlyIncreaseChart")) drawMonthlyIncreaseChart();
+    }, 250);
 });

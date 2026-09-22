@@ -210,64 +210,48 @@
 
     <div class="settings-page">
 
-        <section class="settings-card">
-
-            <div class="settings-title">
-                목표 금액
+        <section class="settings-card collapsible">
+            <div class="settings-card-header">
+                <div>
+                    <div class="settings-title">목표 금액</div>
+                    <div class="settings-desc">목표를 입력하면 분석탭의 진행률에 반영됩니다.</div>
+                </div>
+                <span class="settings-card-arrow">›</span>
             </div>
 
-            <div class="settings-desc">
-                목표를 입력하면 분석탭의 진행률에 반영됩니다.
+            <div class="settings-card-body">
+                <div id="goalSettingsList"></div>
+                <button type="button" class="save-btn" id="goalSaveButton" style="margin-top:12px;">
+                    목표 저장
+                </button>
+            </div>
+        </section>
+
+
+        <section class="settings-card collapsible">
+            <div class="settings-card-header">
+                <div>
+                    <div class="settings-title">분석 화면 설정</div>
+                    <div class="settings-desc">항목을 켜고 끄거나 순서를 변경할 수 있습니다.</div>
+                </div>
+                <span class="settings-card-arrow">›</span>
             </div>
 
-            <div id="goalSettingsList"></div>
-
-            <button
-                type="button"
-                class="save-btn"
-                id="goalSaveButton"
-                style="margin-top:12px;"
-            >
-                목표 저장
-            </button>
-
+            <div class="settings-card-body">
+                <div id="analysisSettingsList"></div>
+            </div>
         </section>
 
 
         <section class="settings-card">
-
-            <div class="settings-title">
-                분석 화면 설정
-            </div>
-
-            <div class="settings-desc">
-                항목을 켜고 끄거나 순서를 변경할 수 있습니다.
-            </div>
-
-            <div id="analysisSettingsList"></div>
-
-        </section>
-
-
-        <section class="settings-card">
-
-            <div class="settings-title">
-                데이터 초기화
-            </div>
-
+            <div class="settings-title">데이터 초기화</div>
             <div class="settings-desc">
                 로컬에 저장된 트리/입력값을 초기화합니다.
                 (Supabase 서버 데이터는 삭제되지 않습니다)
             </div>
-
-            <button
-                type="button"
-                class="danger-btn"
-                id="resetLocalButton"
-            >
+            <button type="button" class="danger-btn" id="resetLocalButton">
                 로컬 데이터 초기화
             </button>
-
         </section>
 
     </div>
@@ -283,47 +267,32 @@
 <nav class="bottom-nav">
 
     <button class="nav-item active" data-page="home">
-
         <div class="nav-icon">⌂</div>
-
         <span>홈</span>
-
     </button>
 
 
     <button class="nav-item" data-page="input">
-
         <div class="nav-icon">＋</div>
-
         <span>입력</span>
-
     </button>
 
 
     <button class="nav-item" data-page="analysis">
-
         <div class="nav-icon">◔</div>
-
         <span>분석</span>
-
     </button>
 
 
     <button class="nav-item" data-page="detail">
-
         <div class="nav-icon">☷</div>
-
         <span>상세</span>
-
     </button>
 
 
     <button class="nav-item" data-page="settings">
-
         <div class="nav-icon">⚙</div>
-
         <span>설정</span>
-
     </button>
 
 </nav>
