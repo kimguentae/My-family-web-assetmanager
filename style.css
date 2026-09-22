@@ -267,23 +267,24 @@ button {
     box-sizing: border-box;
 }
 
+/* ⭐ 부동산 제외 순자산 카드도 검정 배경 */
 .net-worth-card.secondary-card {
 
-    background: #ffffff;
+    background: #171717;
 
-    color: #171717;
+    color: white;
 
-    border: 1px solid #e8e8e8;
+    border: 0;
 
-    box-shadow: 0 2px 10px rgba(0,0,0,.04);
+    box-shadow: none;
 }
 
 .net-worth-card.secondary-card .small-title {
-    color: #888;
+    color: rgba(255,255,255,.7);
 }
 
 .net-worth-card.secondary-card .net-worth {
-    color: #2f80ed;
+    color: #6db3ff;
 }
 
 .small-title {
@@ -478,6 +479,7 @@ button {
     transform: rotate(90deg);
 }
 
+/* ⭐ 기본 접힘: open 클래스가 붙어야만 표시 */
 .subcategory-list {
 
     display: none;
@@ -1350,7 +1352,6 @@ button {
     transform: translateX(-210px);
 }
 
-/* 액션 버튼 컨테이너 */
 .swipe-actions {
 
     position: absolute;
@@ -1391,7 +1392,6 @@ button {
     );
 }
 
-/* 원형 액션 버튼 */
 .swipe-action-btn {
 
     width: 44px;
