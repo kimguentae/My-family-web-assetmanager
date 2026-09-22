@@ -3333,7 +3333,7 @@ async function loadLatestValues() {
     // 가장 최근 base_date 의 values 를 가져옴
     const { data, error } = await supabaseClient
         .from("asset_records")
-        .select("base_date, values")
+        .select("id, middle_id, name, buy_amount, shares, memo, current_amount")
         .order("base_date", { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -3648,7 +3648,7 @@ async function addHolding(middleId) {
             middle_id: middleId,
             name: name,
             buy_amount: buyAmount,
-            memo: String(currentAmount) // 현재금액은 memo에 임시 저장
+            current_amount: currentAmount
         });
 
     if (error) {
@@ -3686,7 +3686,7 @@ async function editHolding(id) {
         .update({
             name: name,
             buy_amount: buyAmount,
-            memo: String(currentAmount)
+            current_amount: currentAmount
         })
         .eq("id", id);
 
