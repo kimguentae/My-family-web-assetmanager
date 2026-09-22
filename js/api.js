@@ -4,6 +4,19 @@
 
 
 /* ==================================================
+   SUPABASE 설정
+================================================== */
+
+const SUPABASE_URL = "https://ozejxesdcuyypkrxamnd.supabase.co/rest/v1/";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im96ZWp4ZXNkY3V5eXBrcnhhbW5kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk1NjE3MjksImV4cCI6MjEwNTEzNzcyOX0.Fcxd4ScWmJn7ZmfSmFyrNOX0MvXoZBSDn52uLV8R3GQ";
+
+const supabaseClient = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_ANON_KEY
+);
+
+
+/* ==================================================
    기본 항목
 ================================================== */
 
@@ -319,34 +332,130 @@ async function saveAll() {
 
     if (status) status.textContent = "";
 
-    const values = collectValues();
+    try {
+        const values = collectValues();
 
-    // 로컬 fallback
-    localStorage.setItem(
-        "myAssetValues_" + selectedDate,
-        JSON.stringify(values)
-    );
+        // 로컬 fallback
+        localStorage.setItem(
+            "myAssetValues_" + selectedDate,
+            JSON.stringify(values)
+        );
 
-    saveTree();
-    updateHome();
+        saveTree();
+        updateHome();
 
-    const data = {
-        baseDate: selectedDate,
-        values: values,
-        tree: tree
-    };
+        const data = {
+            baseDate: selectedDate,
+            values: values,
+            tree: tree
+        };
 
-    const result = await saveToSupabase(data);
+        const result = await saveToSupabase(data);
 
-    if (result && result.success) {
-        if (status) status.textContent = "저장되었습니다.";
-    } else {
+        if (result && result.success) {
+            if (status) status.textContent = "저장되었습니다.";
+        } else {
+            if (status) status.textContent = "저장에 실패했습니다.";
+            console.error("Save failed:", result);
+        }
+    } catch (e) {
+        console.error("Save exception:", e);
         if (status) status.textContent = "저장에 실패했습니다.";
-        console.error("Save failed:", result);
+    } finally {
+        button.disabled = false;
+        button.textContent = "저장하기";
     }
+}
 
-    button.disabled = false;
-    button.textContent = "저장하기";
+
+/* ==================================================
+   SUPABASE FUNCTIONS
+================================================== */
+
+async function saveToSupabase(data) {
+    try {
+        const { error } = await supabaseClient
+            .from("asset_records")
+            .upsert(
+                {
+                    base_date: data.baseDate,
+                    values: data.values,
+                    tree: data.tree
+                },
+                { onConflict: "base_date" }
+            );
+
+        if (error) {
+            console.error("Supabase save error:", error);
+            return { success: false, error: error };
+        }
+
+        return { success: true };
+
+    } catch (e) {
+        console.error("Supabase save exception:", e);
+        return { success: false, error: e };
+    }
+}
+
+
+async function loadFromSupabase(date) {
+    try {
+        const { data, error } = await supabaseClient
+            .from("asset_records")
+            .select("values, tree")
+            .eq("base_date", date)
+            .maybeSingle();
+
+        if (error) {
+            console.error("Supabase load error:", error);
+            return { success: false, error: error };
+        }
+
+        if (!data) {
+            return { success: true, data: null };
+        }
+
+        return {
+            success: true,
+            data: {
+                values: data.values,
+                tree: data.tree
+            }
+        };
+
+    } catch (e) {
+        console.error("Supabase load exception:", e);
+        return { success: false, error: e };
+    }
+}
+
+
+async function loadHistoryFromSupabase() {
+    try {
+        const { data, error } = await supabaseClient
+            .from("asset_records")
+            .select("base_date, values, tree")
+            .order("base_date", { ascending: true });
+
+        if (error) {
+            console.error("Supabase history error:", error);
+            return { success: false, error: error };
+        }
+
+        return {
+            success: true,
+            data: (data || []).map(row => ({
+                date: row.base_date,
+                values: row.values,
+                tree: row.tree
+            }))
+        };
+
+    } catch (e) {
+        console.error("Supabase history exception:", e);
+        return { success: false, error: e };
+    }
 }
 
 
@@ -1222,7 +1331,7 @@ function renderHome(roots, containerId, values, isDebt) {
 
 
 /* ==================================================
-   SUPABASE LOAD
+   날짜 데이터 로딩
 ================================================== */
 
 async function loadDateData() {
