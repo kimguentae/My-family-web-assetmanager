@@ -706,14 +706,8 @@ button {
     margin-bottom: 18px;
 }
 
-.empty-page h2 {
-    margin: 0;
-}
-
-.empty-page p {
-    color: #888;
-    line-height: 1.6;
-}
+.empty-page h2 { margin: 0; }
+.empty-page p { color: #888; line-height: 1.6; }
 
 
 /* =========================
@@ -751,23 +745,15 @@ button {
     font-weight: 800;
 }
 
-.nav-icon {
-    font-size: 23px;
-    line-height: 1;
-}
-
-.nav-item span {
-    font-size: 11px;
-}
+.nav-icon { font-size: 23px; line-height: 1; }
+.nav-item span { font-size: 11px; }
 
 
 /* =========================
    ANALYSIS
 ========================= */
 
-.analysis-page {
-    width: 100%;
-}
+.analysis-page { width: 100%; }
 
 .analysis-card {
     background: white;
@@ -802,10 +788,7 @@ button {
     overflow: visible;
 }
 
-.chart-grid-line {
-    stroke: #eeeeee;
-    stroke-width: 1;
-}
+.chart-grid-line { stroke: #eeeeee; stroke-width: 1; }
 
 .chart-axis-text {
     fill: #999;
@@ -898,7 +881,7 @@ button {
 
 
 /* =========================
-   ANALYSIS - METRIC CARDS
+   METRIC CARDS
 ========================= */
 
 .metric-grid {
@@ -936,15 +919,9 @@ button {
 .metric-delta.down { color: #2f80ed; }
 .metric-delta.neutral { color: #999; }
 
-.metric-delta .delta-abs {
-    color: #999;
-    font-weight: 600;
-    margin-left: 4px;
-}
-
 
 /* =========================
-   ANALYSIS - SUMMARY
+   SUMMARY
 ========================= */
 
 .monthly-summary {
@@ -970,7 +947,7 @@ button {
 
 
 /* =========================
-   ANALYSIS - DONUT
+   DONUT
 ========================= */
 
 .donut-wrap {
@@ -1018,14 +995,11 @@ button {
     white-space: nowrap;
 }
 
-.donut-legend-pct {
-    font-weight: 800;
-    color: #171717;
-}
+.donut-legend-pct { font-weight: 800; color: #171717; }
 
 
 /* =========================
-   ANALYSIS - CONTRIBUTION
+   CONTRIBUTION
 ========================= */
 
 .contrib-list {
@@ -1083,7 +1057,7 @@ button {
 
 
 /* =========================
-   ANALYSIS - GOAL
+   GOAL
 ========================= */
 
 .goal-item {
@@ -1199,6 +1173,44 @@ button {
 .settings-order-btn:disabled {
     opacity: .3;
     cursor: default;
+}
+
+/* Goal input */
+
+.goal-input-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 4px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.goal-input-row:last-child { border-bottom: 0; }
+
+.goal-input-label {
+    flex: 0 0 140px;
+    font-size: 13px;
+    color: #555;
+    font-weight: 700;
+}
+
+.goal-input-field {
+    flex: 1;
+    height: 38px;
+    padding: 0 12px;
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+    background: #fafafa;
+    font-size: 14px;
+    font-weight: 700;
+    text-align: right;
+    color: #333;
+    outline: 0;
+}
+
+.goal-input-field:focus {
+    border-color: #171717;
+    background: white;
 }
 
 /* Toggle */
@@ -1349,4 +1361,6 @@ button {
     .donut-svg-wrap { width: 160px; height: 160px; }
 
     .metric-value { font-size: 17px; }
+
+    .goal-input-label { flex-basis: 110px; font-size: 12px; }
 }

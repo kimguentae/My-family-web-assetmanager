@@ -213,12 +213,35 @@
         <section class="settings-card">
 
             <div class="settings-title">
+                목표 금액
+            </div>
+
+            <div class="settings-desc">
+                목표를 입력하면 분석탭의 진행률에 반영됩니다.
+            </div>
+
+            <div id="goalSettingsList"></div>
+
+            <button
+                type="button"
+                class="save-btn"
+                id="goalSaveButton"
+                style="margin-top:12px;"
+            >
+                목표 저장
+            </button>
+
+        </section>
+
+
+        <section class="settings-card">
+
+            <div class="settings-title">
                 분석 화면 설정
             </div>
 
             <div class="settings-desc">
                 항목을 켜고 끄거나 순서를 변경할 수 있습니다.
-                위/아래 버튼으로 순서를 조정하세요.
             </div>
 
             <div id="analysisSettingsList"></div>
@@ -234,6 +257,7 @@
 
             <div class="settings-desc">
                 로컬에 저장된 트리/입력값을 초기화합니다.
+                (Supabase 서버 데이터는 삭제되지 않습니다)
             </div>
 
             <button

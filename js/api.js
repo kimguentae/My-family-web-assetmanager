@@ -81,17 +81,17 @@ const DEFAULT_TREE = [
 ================================================== */
 
 const ANALYSIS_SECTIONS = [
-    { id: "metricCards",      name: "핵심 지표 카드",           defaultOn: true  },
-    { id: "netWorthChart",    name: "순자산 추이",              defaultOn: true  },
-    { id: "assetDebtChart",   name: "자산 · 부채 추이",         defaultOn: true  },
-    { id: "donutAsset",       name: "자산 구성 도넛",           defaultOn: true  },
-    { id: "debtRepayChart",   name: "부채 상환 추이",           defaultOn: true  },
-    { id: "monthlyIncrease",  name: "월별 순자산 증가액",       defaultOn: true  },
-    { id: "investmentChart",  name: "투자자산 변동",            defaultOn: true  },
-    { id: "contribution",     name: "자산 증가 기여도",         defaultOn: true  },
-    { id: "allocation",       name: "자산배분 비중 추이",       defaultOn: true  },
-    { id: "goalProgress",     name: "목표 진행률",              defaultOn: true  },
-    { id: "monthlySummary",   name: "이번 달 요약 리포트",      defaultOn: true  }
+    { id: "metricCards",      name: "핵심 지표 카드",           defaultOn: true },
+    { id: "netWorthChart",    name: "순자산 추이",              defaultOn: true },
+    { id: "assetDebtChart",   name: "자산 · 부채 추이",         defaultOn: true },
+    { id: "donutAsset",       name: "자산 구성 도넛",           defaultOn: true },
+    { id: "debtRepayChart",   name: "부채 상환 추이",           defaultOn: true },
+    { id: "monthlyIncrease",  name: "월별 순자산 증가액",       defaultOn: true },
+    { id: "investmentChart",  name: "투자자산 변동",            defaultOn: true },
+    { id: "contribution",     name: "자산 증가 기여도",         defaultOn: true },
+    { id: "allocation",       name: "자산배분 비중 추이",       defaultOn: true },
+    { id: "goalProgress",     name: "목표 진행률",              defaultOn: true },
+    { id: "monthlySummary",   name: "이번 달 요약 리포트",      defaultOn: true }
 ];
 
 
@@ -108,6 +108,8 @@ let analysisConfig = loadAnalysisConfig();
 
 let analysisHistory = [];
 let analysisLoaded = false;
+
+let goals = loadGoals();
 
 
 /* ==================================================
@@ -179,7 +181,6 @@ function initDate() {
         localStorage.setItem("myAssetSelectedDate", selectedDate);
 
         updateDate();
-
         renderInput();
 
         await loadDateData();
@@ -320,6 +321,7 @@ async function saveAll() {
 
     const values = collectValues();
 
+    // 로컬 fallback
     localStorage.setItem(
         "myAssetValues_" + selectedDate,
         JSON.stringify(values)
@@ -329,18 +331,18 @@ async function saveAll() {
     updateHome();
 
     const data = {
-        action: "save",
         baseDate: selectedDate,
         values: values,
         tree: tree
     };
 
-    const result = await saveToGoogleSheet(data);
+    const result = await saveToSupabase(data);
 
     if (result && result.success) {
         if (status) status.textContent = "저장되었습니다.";
     } else {
         if (status) status.textContent = "저장에 실패했습니다.";
+        console.error("Save failed:", result);
     }
 
     button.disabled = false;
@@ -644,7 +646,7 @@ function createChildElement(child) {
 
 
 /* ==================================================
-   스와이프 액션 버튼
+   스와이프
 ================================================== */
 
 function createSwipeActions(items) {
@@ -813,10 +815,6 @@ function attachMoneyInput(input, item, kind) {
 }
 
 
-/* ==================================================
-   실시간 합계
-================================================== */
-
 function updateTotalsRealtime() {
     const values = collectValues();
 
@@ -843,7 +841,7 @@ function updateTotalsRealtime() {
 
 
 /* ==================================================
-   합계
+   합계 / 유틸
 ================================================== */
 
 function getMiddleDirectValue(middle) {
@@ -901,10 +899,6 @@ function getCurrencySymbolForMiddle(middle) {
 }
 
 
-/* ==================================================
-   상태 표시
-================================================== */
-
 function setLoadStatus(status) {
     const element = document.getElementById("loadStatus");
     if (!element) return;
@@ -918,7 +912,7 @@ function setLoadStatus(status) {
 
 
 /* ==================================================
-   추가 / 수정 / 삭제
+   CRUD
 ================================================== */
 
 function addRoot(type) {
@@ -1044,7 +1038,6 @@ function deleteChild(id) {
 
 function removeValues(ids) {
     const values = getLocalValues();
-
     ids.forEach(id => delete values[id]);
 
     localStorage.setItem(
@@ -1055,7 +1048,7 @@ function removeValues(ids) {
 
 
 /* ==================================================
-   찾기
+   찾기 / ID
 ================================================== */
 
 function findRoot(id) {
@@ -1229,7 +1222,7 @@ function renderHome(roots, containerId, values, isDebt) {
 
 
 /* ==================================================
-   GOOGLE SHEETS LOAD
+   SUPABASE LOAD
 ================================================== */
 
 async function loadDateData() {
@@ -1239,7 +1232,7 @@ async function loadDateData() {
     if (local) updateHome();
 
     try {
-        let result = await loadFromGoogleSheet(selectedDate);
+        let result = await loadFromSupabase(selectedDate);
 
         const hasData =
             result &&
@@ -1249,7 +1242,7 @@ async function loadDateData() {
             Object.keys(result.data.values).length > 0;
 
         if (!hasData) {
-            const historyResult = await loadHistoryFromGoogleSheet();
+            const historyResult = await loadHistoryFromSupabase();
 
             if (historyResult && historyResult.success &&
                 Array.isArray(historyResult.data) &&
@@ -1366,7 +1359,7 @@ function escapeHtml(value) {
 
 
 /* ==================================================
-   설정 - 분석 순서 저장/불러오기
+   분석 설정
 ================================================== */
 
 function loadAnalysisConfig() {
@@ -1376,7 +1369,6 @@ function loadAnalysisConfig() {
         );
 
         if (Array.isArray(stored) && stored.length > 0) {
-            // 누락된 섹션 병합 + 기본 순서 유지
             const map = new Map();
             stored.forEach(item => map.set(item.id, item));
 
@@ -1393,7 +1385,6 @@ function loadAnalysisConfig() {
                 }
             });
 
-            // 새로 추가된 섹션은 끝에 붙임
             ANALYSIS_SECTIONS.forEach(def => {
                 if (!map.has(def.id)) {
                     merged.push({
@@ -1425,17 +1416,44 @@ function saveAnalysisConfig() {
 
 
 /* ==================================================
-   설정 렌더
+   목표
+================================================== */
+
+function loadGoals() {
+    try {
+        const stored = JSON.parse(localStorage.getItem("myAssetGoals") || "null");
+        if (stored && typeof stored === "object") {
+            return {
+                netWorth: Number(stored.netWorth) || 0,
+                excludingRealEstate: Number(stored.excludingRealEstate) || 0,
+                investment: Number(stored.investment) || 0,
+                fire: Number(stored.fire) || 0
+            };
+        }
+    } catch (e) { /* ignore */ }
+
+    return { netWorth: 0, excludingRealEstate: 0, investment: 0, fire: 0 };
+}
+
+
+function saveGoals() {
+    localStorage.setItem("myAssetGoals", JSON.stringify(goals));
+}
+
+
+/* ==================================================
+   설정 초기화 및 렌더
 ================================================== */
 
 function initSettings() {
     const resetBtn = document.getElementById("resetLocalButton");
     if (resetBtn) {
         resetBtn.addEventListener("click", function () {
-            if (!confirm("로컬에 저장된 모든 데이터를 초기화할까요?\n(트리, 입력값, 분석 설정이 초기화됩니다)")) return;
+            if (!confirm("로컬 데이터를 초기화할까요?\n(트리, 입력값, 분석설정, 목표)")) return;
 
             localStorage.removeItem("myAssetTree");
             localStorage.removeItem("myAssetAnalysisConfig");
+            localStorage.removeItem("myAssetGoals");
             localStorage.removeItem("myAssetSelectedDate");
 
             Object.keys(localStorage)
@@ -1445,10 +1463,79 @@ function initSettings() {
             location.reload();
         });
     }
+
+    const goalSaveBtn = document.getElementById("goalSaveButton");
+    if (goalSaveBtn) {
+        goalSaveBtn.addEventListener("click", function () {
+            const fields = document.querySelectorAll(".goal-input-field");
+
+            fields.forEach(f => {
+                const key = f.dataset.key;
+                const raw = f.value.replace(/[^0-9]/g, "");
+                goals[key] = Number(raw) || 0;
+            });
+
+            saveGoals();
+
+            goalSaveBtn.textContent = "저장 완료!";
+            setTimeout(() => {
+                goalSaveBtn.textContent = "목표 저장";
+            }, 1200);
+        });
+    }
 }
 
 
 function renderSettings() {
+    renderGoalSettings();
+    renderAnalysisSettings();
+}
+
+
+function renderGoalSettings() {
+    const list = document.getElementById("goalSettingsList");
+    if (!list) return;
+
+    list.innerHTML = "";
+
+    const fields = [
+        { key: "netWorth",            label: "목표 순자산" },
+        { key: "excludingRealEstate", label: "목표 부동산 제외 순자산" },
+        { key: "investment",          label: "목표 투자자산" },
+        { key: "fire",                label: "FIRE 자산 목표" }
+    ];
+
+    fields.forEach(field => {
+        const row = document.createElement("div");
+        row.className = "goal-input-row";
+
+        const label = document.createElement("div");
+        label.className = "goal-input-label";
+        label.textContent = field.label;
+
+        const input = document.createElement("input");
+        input.type = "text";
+        input.inputMode = "numeric";
+        input.className = "goal-input-field";
+        input.dataset.key = field.key;
+        input.placeholder = "0";
+        input.value = goals[field.key]
+            ? formatNumber(goals[field.key])
+            : "";
+
+        input.addEventListener("input", function () {
+            const raw = this.value.replace(/[^0-9]/g, "");
+            this.value = raw ? formatNumber(raw) : "";
+        });
+
+        row.appendChild(label);
+        row.appendChild(input);
+        list.appendChild(row);
+    });
+}
+
+
+function renderAnalysisSettings() {
     const list = document.getElementById("analysisSettingsList");
     if (!list) return;
 
@@ -1458,7 +1545,6 @@ function renderSettings() {
         const row = document.createElement("div");
         row.className = "settings-row";
 
-        // 순서 버튼
         const orderWrap = document.createElement("div");
         orderWrap.className = "settings-row-order";
 
@@ -1479,18 +1565,16 @@ function renderSettings() {
         orderWrap.appendChild(upBtn);
         orderWrap.appendChild(downBtn);
 
-        // 이름
         const nameEl = document.createElement("div");
         nameEl.className = "settings-row-name";
         nameEl.textContent = item.name;
 
-        // 토글
         const toggle = document.createElement("div");
         toggle.className = "toggle" + (item.enabled ? " on" : "");
         toggle.addEventListener("click", () => {
             analysisConfig[index].enabled = !analysisConfig[index].enabled;
             saveAnalysisConfig();
-            renderSettings();
+            renderAnalysisSettings();
         });
 
         row.appendChild(orderWrap);
@@ -1511,12 +1595,12 @@ function moveAnalysis(index, dir) {
     analysisConfig[target] = tmp;
 
     saveAnalysisConfig();
-    renderSettings();
+    renderAnalysisSettings();
 }
 
 
 /* ==================================================
-   ANALYSIS
+   ANALYSIS RENDER
 ================================================== */
 
 async function renderAnalysis() {
@@ -1528,7 +1612,7 @@ async function renderAnalysis() {
     </div>`;
 
     try {
-        const result = await loadHistoryFromGoogleSheet();
+        const result = await loadHistoryFromSupabase();
 
         if (!result || !result.success || !Array.isArray(result.data)) {
             container.innerHTML = `<div class="analysis-card">
@@ -1563,7 +1647,6 @@ async function renderAnalysis() {
 
                 case "netWorthChart":
                     container.appendChild(createChartCard("순자산 추이", "netWorthChart"));
-                    // draw after inserted
                     setTimeout(() => drawNetWorthChart(), 0);
                     break;
 
@@ -1643,7 +1726,7 @@ async function renderAnalysis() {
 
 
 /* ==================================================
-   카드 생성 헬퍼
+   카드 헬퍼
 ================================================== */
 
 function createChartCard(title, containerId) {
@@ -1677,7 +1760,7 @@ function createChartCardWithLegend(title, containerId, legendItems) {
 
 
 /* ==================================================
-   기록 지표 계산
+   히스토리 지표
 ================================================== */
 
 function getHistoryMetrics(record) {
@@ -1765,7 +1848,7 @@ function getAnalysisSeries(metricNames) {
 
 
 /* ==================================================
-   카드: 핵심 지표
+   Metric cards
 ================================================== */
 
 function createMetricCards() {
@@ -1776,18 +1859,15 @@ function createMetricCards() {
     const metrics = getHistoryMetrics(latest);
 
     const prevMonth = findRecordOffset(latest.date, "month");
-    const prevYear = findRecordOffset(latest.date, "year");
-
     const prevMonthMetrics = prevMonth ? getHistoryMetrics(prevMonth) : null;
-    const prevYearMetrics = prevYear ? getHistoryMetrics(prevYear) : null;
 
     const items = [
-        { label: "순자산",            key: "netWorth",              invert: false },
+        { label: "순자산",            key: "netWorth",                invert: false },
         { label: "부동산 제외 순자산", key: "assetExcludingRealEstate", invert: false },
-        { label: "총자산",            key: "asset",                 invert: false },
-        { label: "총부채",            key: "debt",                  invert: true  },
-        { label: "투자자산",          key: "investment",            invert: false },
-        { label: "현금성자산",        key: "cash",                  invert: false }
+        { label: "총자산",            key: "asset",                   invert: false },
+        { label: "총부채",            key: "debt",                    invert: true  },
+        { label: "투자자산",          key: "investment",              invert: false },
+        { label: "현금성자산",        key: "cash",                    invert: false }
     ];
 
     const grid = document.createElement("div");
@@ -1803,17 +1883,14 @@ function createMetricCards() {
 
         if (prevMonthMetrics) {
             const diff = value - (Number(prevMonthMetrics[item.key]) || 0);
+
             if (diff !== 0) {
                 const sign = diff > 0 ? "+" : "−";
                 const abs = Math.abs(diff);
 
-                // 부채는 감소가 좋으므로 invert
                 let cls;
-                if (item.invert) {
-                    cls = diff > 0 ? "down" : "up";
-                } else {
-                    cls = diff > 0 ? "up" : "down";
-                }
+                if (item.invert) cls = diff > 0 ? "down" : "up";
+                else cls = diff > 0 ? "up" : "down";
 
                 deltaHTML = `<div class="metric-delta ${cls}">
                     전월 ${sign}₩${formatNumber(abs)}
@@ -1838,7 +1915,7 @@ function createMetricCards() {
 
 
 /* ==================================================
-   카드: 도넛 (자산 구성)
+   Donut
 ================================================== */
 
 function createDonutCard() {
@@ -1849,11 +1926,11 @@ function createDonutCard() {
     const metrics = getHistoryMetrics(latest);
 
     const data = [
-        { name: "부동산",     value: metrics.realEstate,  color: "#f2994a" },
-        { name: "투자자산",   value: metrics.investment,  color: "#2f80ed" },
-        { name: "현금성자산", value: metrics.cash,        color: "#56ccf2" },
-        { name: "현금·상품권", value: metrics.cashgift,    color: "#27ae60" },
-        { name: "기타자산",   value: metrics.etc,         color: "#bb6bd9" }
+        { name: "부동산",      value: metrics.realEstate, color: "#f2994a" },
+        { name: "투자자산",    value: metrics.investment, color: "#2f80ed" },
+        { name: "현금성자산",  value: metrics.cash,       color: "#56ccf2" },
+        { name: "현금·상품권", value: metrics.cashgift,   color: "#27ae60" },
+        { name: "기타자산",    value: metrics.etc,        color: "#bb6bd9" }
     ].filter(d => d.value > 0);
 
     const total = data.reduce((s, d) => s + d.value, 0);
@@ -1869,8 +1946,7 @@ function createDonutCard() {
     svgWrap.className = "donut-svg-wrap";
 
     if (total > 0) {
-        const svg = createDonutSVG(data, total, 160);
-        svgWrap.appendChild(svg);
+        svgWrap.appendChild(createDonutSVG(data, total, 160));
     } else {
         svgWrap.innerHTML = `<div class="analysis-empty" style="min-height:160px;">데이터 없음</div>`;
     }
@@ -1943,7 +2019,7 @@ function createDonutSVG(data, total, size) {
 
 
 /* ==================================================
-   카드: 기여도
+   Contribution
 ================================================== */
 
 function createContributionCard() {
@@ -1956,7 +2032,6 @@ function createContributionCard() {
     const title = document.createElement("div");
     title.className = "analysis-title";
     title.innerHTML = `<div>자산 증가 기여도 (전월 대비)</div>`;
-
     card.appendChild(title);
 
     if (!prev) {
@@ -2010,7 +2085,7 @@ function createContributionCard() {
 
 
 /* ==================================================
-   카드: 목표 진행률
+   Goal
 ================================================== */
 
 function createGoalCard() {
@@ -2022,16 +2097,14 @@ function createGoalCard() {
     title.innerHTML = `<div>목표 진행률</div>`;
     card.appendChild(title);
 
-    const goals = loadGoals();
-
     const latest = analysisHistory[analysisHistory.length - 1];
     const metrics = getHistoryMetrics(latest);
 
     const items = [
-        { name: "목표 순자산",           current: metrics.netWorth,              target: goals.netWorth },
-        { name: "목표 부동산 제외 순자산", current: metrics.assetExcludingRealEstate, target: goals.excludingRealEstate },
-        { name: "목표 투자자산",         current: metrics.investment,            target: goals.investment },
-        { name: "FIRE 자산",             current: metrics.assetExcludingRealEstate, target: goals.fire }
+        { name: "목표 순자산",             current: metrics.netWorth,                 target: goals.netWorth },
+        { name: "목표 부동산 제외 순자산",  current: metrics.assetExcludingRealEstate, target: goals.excludingRealEstate },
+        { name: "목표 투자자산",           current: metrics.investment,               target: goals.investment },
+        { name: "FIRE 자산",               current: metrics.assetExcludingRealEstate, target: goals.fire }
     ].filter(item => item.target > 0);
 
     if (items.length === 0) {
@@ -2069,7 +2142,7 @@ function createGoalCard() {
 
 
 /* ==================================================
-   카드: 이번 달 요약
+   Monthly summary
 ================================================== */
 
 function createMonthlySummaryCard() {
@@ -2082,7 +2155,6 @@ function createMonthlySummaryCard() {
     const title = document.createElement("div");
     title.className = "analysis-title";
     title.innerHTML = `<div>이번 달 요약 (${formatFullDate(latest.date)})</div>`;
-
     card.appendChild(title);
 
     if (!prev) {
@@ -2118,7 +2190,7 @@ function createMonthlySummaryCard() {
     const netClass = netDiff > 0 ? "up" : netDiff < 0 ? "down" : "";
     const netSign = netDiff > 0 ? "+" : netDiff < 0 ? "−" : "";
 
-    const html = [
+    wrap.innerHTML = [
         `<div class="summary-row">
             <span class="label">순자산 변화</span>
             <span class="value ${netClass}">${netSign}₩${formatNumber(Math.abs(netDiff))} (${pctChange.toFixed(2)}%)</span>
@@ -2137,34 +2209,13 @@ function createMonthlySummaryCard() {
             : ""
     ].join("");
 
-    wrap.innerHTML = html;
     card.appendChild(wrap);
-
     return card;
 }
 
 
 /* ==================================================
-   목표 저장
-================================================== */
-
-function loadGoals() {
-    try {
-        const stored = JSON.parse(localStorage.getItem("myAssetGoals") || "null");
-        if (stored && typeof stored === "object") return stored;
-    } catch (e) { /* ignore */ }
-
-    return {
-        netWorth: 0,
-        excludingRealEstate: 0,
-        investment: 0,
-        fire: 0
-    };
-}
-
-
-/* ==================================================
-   유틸: 특정 날짜 기준 offset 기록 찾기
+   offset 기록 찾기
 ================================================== */
 
 function findRecordOffset(baseDate, type) {
@@ -2188,7 +2239,7 @@ function findRecordOffset(baseDate, type) {
 
 
 /* ==================================================
-   SVG LINE CHART
+   DRAW CHARTS
 ================================================== */
 
 function drawNetWorthChart() {
@@ -2277,7 +2328,7 @@ function drawMonthlyIncreaseChart() {
 
 
 /* ==================================================
-   라인 차트
+   Line chart
 ================================================== */
 
 function createLineChart(options) {
@@ -2310,8 +2361,6 @@ function createLineChart(options) {
     if (maxValue <= 0) maxValue = 100;
     maxValue *= 1.12;
 
-    const minValue = 0;
-
     const ns = "http://www.w3.org/2000/svg";
     const svg = document.createElementNS(ns, "svg");
     svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
@@ -2335,10 +2384,9 @@ function createLineChart(options) {
         line.setAttribute("y1", y);
         line.setAttribute("y2", y);
         line.setAttribute("class", "chart-grid-line");
-
         svg.appendChild(line);
 
-        const value = maxValue - (maxValue - minValue) * ratio;
+        const value = maxValue - maxValue * ratio;
 
         const text = document.createElementNS(ns, "text");
         text.setAttribute("x", padding.left - 7);
@@ -2346,7 +2394,6 @@ function createLineChart(options) {
         text.setAttribute("text-anchor", "end");
         text.setAttribute("class", "chart-axis-text");
         text.textContent = formatChartAxis(value);
-
         svg.appendChild(text);
     }
 
@@ -2356,7 +2403,7 @@ function createLineChart(options) {
     }
 
     function getY(value) {
-        const ratio = (maxValue - value) / (maxValue - minValue);
+        const ratio = (maxValue - value) / maxValue;
         return padding.top + chartHeight * ratio;
     }
 
@@ -2395,7 +2442,6 @@ function createLineChart(options) {
         path.setAttribute("d", pathData);
         path.setAttribute("class", "chart-line");
         path.setAttribute("stroke", serie.color);
-
         svg.appendChild(path);
 
         options.data.forEach((point, index) => {
@@ -2437,7 +2483,7 @@ function createLineChart(options) {
 
 
 /* ==================================================
-   바 차트 (월별 순자산 증가액)
+   Bar chart
 ================================================== */
 
 function createBarChart(container, data) {
@@ -2468,33 +2514,6 @@ function createBarChart(container, data) {
     tooltip.className = "chart-tooltip";
     container.appendChild(tooltip);
 
-    // 그리드
-    const gridCount = 4;
-
-    for (let i = 0; i <= gridCount; i++) {
-        const ratio = i / gridCount;
-        const y = padding.top + chartHeight * ratio;
-
-        const line = document.createElementNS(ns, "line");
-        line.setAttribute("x1", padding.left);
-        line.setAttribute("x2", width - padding.right);
-        line.setAttribute("y1", y);
-        line.setAttribute("y2", y);
-        line.setAttribute("class", "chart-grid-line");
-        svg.appendChild(line);
-
-        const value = maxAbs - (maxAbs * 2) * ratio;
-
-        const text = document.createElementNS(ns, "text");
-        text.setAttribute("x", padding.left - 7);
-        text.setAttribute("y", y + 3);
-        text.setAttribute("text-anchor", "end");
-        text.setAttribute("class", "chart-axis-text");
-        text.textContent = formatChartAxis(value);
-        svg.appendChild(text);
-    }
-
-    // 0 기준선
     const zeroY = padding.top + chartHeight / 2;
 
     const zeroLine = document.createElementNS(ns, "line");
@@ -2528,7 +2547,6 @@ function createBarChart(container, data) {
         rect.setAttribute("fill", point.value >= 0 ? "#eb5757" : "#2f80ed");
         svg.appendChild(rect);
 
-        // 날짜 표시
         const shouldShow =
             data.length <= 6 ||
             index === 0 ||
@@ -2545,7 +2563,6 @@ function createBarChart(container, data) {
             svg.appendChild(text);
         }
 
-        // Tooltip hit
         const hit = document.createElementNS(ns, "rect");
         hit.setAttribute("x", x - 2);
         hit.setAttribute("y", padding.top);
@@ -2578,7 +2595,7 @@ function createBarChart(container, data) {
 
 
 /* ==================================================
-   Tooltip
+   Tooltip / 포맷
 ================================================== */
 
 function showChartTooltip(container, tooltip, date, seriesName, value, x, y) {
@@ -2620,10 +2637,6 @@ function showChartTooltip(container, tooltip, date, seriesName, value, x, y) {
 }
 
 
-/* ==================================================
-   포맷 유틸
-================================================== */
-
 function formatChartAxis(value) {
     const number = Number(value) || 0;
     const abs = Math.abs(number);
@@ -2658,7 +2671,7 @@ function formatFullDate(date) {
 
 
 /* ==================================================
-   리사이즈
+   Resize
 ================================================== */
 
 window.addEventListener("resize", function () {
