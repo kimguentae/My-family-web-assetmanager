@@ -29,29 +29,18 @@
 
 <header class="header">
 
-    <div
-        class="logo"
-        id="headerTitle"
-    >
+    <div class="logo" id="headerTitle">
         MY ASSET
     </div>
 
 
     <div class="date-wrap">
 
-        <span
-            id="loadStatus"
-            class="load-status"
-        ></span>
-
+        <span id="loadStatus" class="load-status"></span>
 
         <span id="selectedDate"></span>
 
-
-        <input
-            type="date"
-            id="datePicker"
-        >
+        <input type="date" id="datePicker">
 
     </div>
 
@@ -63,95 +52,76 @@
      HOME
 ========================= -->
 
-<main
-    id="homePage"
-    class="page active-page"
->
+<main id="homePage" class="page active-page">
 
-    <section class="net-worth-card">
+    <section class="net-worth-stack" id="netWorthStack">
 
-        <div class="small-title">
-            나의 순자산
-        </div>
+        <div class="net-worth-card">
 
-        <div class="net-worth">
+            <div class="small-title">
+                나의 순자산
+            </div>
 
-            ₩
-            <span id="netWorth">
-                0
-            </span>
+            <div class="net-worth">
+                ₩
+                <span id="netWorth">0</span>
+            </div>
 
         </div>
 
-    </section>
 
+        <div class="net-worth-card secondary-card">
 
-    <section class="net-worth-card secondary-card">
+            <div class="small-title">
+                부동산 제외 순자산
+            </div>
 
-        <div class="small-title">
-            부동산 제외 순자산
-        </div>
-
-        <div class="net-worth secondary">
-
-            ₩
-            <span id="netWorthExcludingRealEstate">
-                0
-            </span>
+            <div class="net-worth secondary">
+                ₩
+                <span id="netWorthExcludingRealEstate">0</span>
+            </div>
 
         </div>
 
     </section>
+
+
+    <div class="stack-dots" id="stackDots">
+        <span class="dot active"></span>
+        <span class="dot"></span>
+    </div>
 
 
     <section class="section">
 
         <div class="section-title">
 
-            <span>
-                자산
-            </span>
+            <span>자산</span>
 
             <span class="total">
-
                 ₩
-                <span id="assetTotal">
-                    0
-                </span>
-
+                <span id="assetTotal">0</span>
             </span>
 
         </div>
 
 
-        <div
-            id="homeAssets"
-            class="category-card"
-        ></div>
+        <div id="homeAssets" class="category-card"></div>
 
 
         <div class="section-title debt-section-title">
 
-            <span>
-                부채
-            </span>
+            <span>부채</span>
 
             <span class="total">
-
                 ₩
-                <span id="debtTotal">
-                    0
-                </span>
-
+                <span id="debtTotal">0</span>
             </span>
 
         </div>
 
 
-        <div
-            id="homeDebts"
-            class="category-card"
-        ></div>
+        <div id="homeDebts" class="category-card"></div>
 
     </section>
 
@@ -163,27 +133,17 @@
      INPUT
 ========================= -->
 
-<main
-    id="inputPage"
-    class="page"
->
+<main id="inputPage" class="page">
 
     <div id="inputTree"></div>
 
 
-    <button
-        type="button"
-        class="save-btn"
-        id="saveButton"
-    >
+    <button type="button" class="save-btn" id="saveButton">
         저장하기
     </button>
 
 
-    <div
-        id="saveStatus"
-        class="save-status"
-    ></div>
+    <div id="saveStatus" class="save-status"></div>
 
 </main>
 
@@ -193,10 +153,7 @@
      ANALYSIS
 ========================= -->
 
-<main
-    id="analysisPage"
-    class="page"
->
+<main id="analysisPage" class="page">
 
     <div class="analysis-page">
 
@@ -204,18 +161,10 @@
         <section class="analysis-card">
 
             <div class="analysis-title">
-
-                <div>
-                    순자산 추이
-                </div>
-
+                <div>순자산 추이</div>
             </div>
 
-
-            <div
-                class="chart-container"
-                id="netWorthChart"
-            ></div>
+            <div class="chart-container" id="netWorthChart"></div>
 
         </section>
 
@@ -224,44 +173,24 @@
         <section class="analysis-card">
 
             <div class="analysis-title">
-
-                <div>
-                    자산 · 부채 추이
-                </div>
-
+                <div>자산 · 부채 추이</div>
             </div>
-
 
             <div class="chart-legend">
 
                 <div class="legend-item">
-
                     <span class="legend-dot asset-line"></span>
-
-                    <span>
-                        자산(부동산 제외)
-                    </span>
-
+                    <span>자산(부동산 제외)</span>
                 </div>
 
-
                 <div class="legend-item">
-
                     <span class="legend-dot debt-line"></span>
-
-                    <span>
-                        부채
-                    </span>
-
+                    <span>부채</span>
                 </div>
 
             </div>
 
-
-            <div
-                class="chart-container"
-                id="assetDebtChart"
-            ></div>
+            <div class="chart-container" id="assetDebtChart"></div>
 
         </section>
 
@@ -270,44 +199,24 @@
         <section class="analysis-card">
 
             <div class="analysis-title">
-
-                <div>
-                    투자자산 변동
-                </div>
-
+                <div>투자자산 변동</div>
             </div>
-
 
             <div class="chart-legend">
 
                 <div class="legend-item">
-
                     <span class="legend-dot stock-line"></span>
-
-                    <span>
-                        주식
-                    </span>
-
+                    <span>주식</span>
                 </div>
 
-
                 <div class="legend-item">
-
                     <span class="legend-dot coin-line"></span>
-
-                    <span>
-                        비트코인
-                    </span>
-
+                    <span>비트코인</span>
                 </div>
 
             </div>
 
-
-            <div
-                class="chart-container"
-                id="investmentChart"
-            ></div>
+            <div class="chart-container" id="investmentChart"></div>
 
         </section>
 
@@ -322,20 +231,13 @@
      DETAIL
 ========================= -->
 
-<main
-    id="detailPage"
-    class="page"
->
+<main id="detailPage" class="page">
 
     <div class="empty-page">
 
-        <div class="empty-icon">
-            ☷
-        </div>
+        <div class="empty-icon">☷</div>
 
-        <h2>
-            상세
-        </h2>
+        <h2>상세</h2>
 
         <p>
             날짜별 자산 내역을<br>
@@ -352,62 +254,19 @@
      SETTINGS
 ========================= -->
 
-<main
-    id="settingsPage"
-    class="page"
->
+<main id="settingsPage" class="page">
 
     <div class="empty-page">
 
-        <div class="empty-icon">
-            ⚙
-        </div>
+        <div class="empty-icon">⚙</div>
 
-        <h2>
-            설정
-        </h2>
+        <h2>설정</h2>
 
-        <p>
-            MY ASSET 설정
-        </p>
+        <p>MY ASSET 설정</p>
 
     </div>
 
 </main>
-
-
-
-<!-- =========================
-     LONG PRESS MENU
-========================= -->
-
-<div
-    id="contextMenu"
-    class="context-menu"
->
-
-    <button
-        type="button"
-        data-action="edit"
-    >
-        수정
-    </button>
-
-    <button
-        type="button"
-        data-action="add"
-    >
-        추가
-    </button>
-
-    <button
-        type="button"
-        data-action="delete"
-    >
-        삭제
-    </button>
-
-</div>
 
 
 
@@ -417,82 +276,47 @@
 
 <nav class="bottom-nav">
 
-    <button
-        class="nav-item active"
-        data-page="home"
-    >
+    <button class="nav-item active" data-page="home">
 
-        <div class="nav-icon">
-            ⌂
-        </div>
+        <div class="nav-icon">⌂</div>
 
-        <span>
-            홈
-        </span>
+        <span>홈</span>
 
     </button>
 
 
-    <button
-        class="nav-item"
-        data-page="input"
-    >
+    <button class="nav-item" data-page="input">
 
-        <div class="nav-icon">
-            ＋
-        </div>
+        <div class="nav-icon">＋</div>
 
-        <span>
-            입력
-        </span>
+        <span>입력</span>
 
     </button>
 
 
-    <button
-        class="nav-item"
-        data-page="analysis"
-    >
+    <button class="nav-item" data-page="analysis">
 
-        <div class="nav-icon">
-            ◔
-        </div>
+        <div class="nav-icon">◔</div>
 
-        <span>
-            분석
-        </span>
+        <span>분석</span>
 
     </button>
 
 
-    <button
-        class="nav-item"
-        data-page="detail"
-    >
+    <button class="nav-item" data-page="detail">
 
-        <div class="nav-icon">
-            ☷
-        </div>
+        <div class="nav-icon">☷</div>
 
-        <span>
-            상세
-        </span>
+        <span>상세</span>
 
     </button>
 
 
-    <button
-        class="nav-item"
-        data-page="settings"
-    >
+    <button class="nav-item" data-page="settings">
 
-        <div class="nav-icon">
-            ⚙
-        </div>
+        <div class="nav-icon">⚙</div>
 
-        <span>
-            설정
-        </span>
+        <span>설정</span>
 
     </button>
 

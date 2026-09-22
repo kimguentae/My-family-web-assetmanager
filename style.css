@@ -209,13 +209,9 @@ button {
 
 @keyframes load-spin {
 
-    from {
-        transform: rotate(0deg);
-    }
+    from { transform: rotate(0deg); }
 
-    to {
-        transform: rotate(360deg);
-    }
+    to { transform: rotate(360deg); }
 
 }
 
@@ -239,10 +235,37 @@ button {
 
 
 /* =========================
-   순자산
+   순자산 카드 스택 (가로 스와이프)
 ========================= */
 
+.net-worth-stack {
+
+    display: flex;
+
+    overflow-x: auto;
+
+    scroll-snap-type: x mandatory;
+
+    -webkit-overflow-scrolling: touch;
+
+    gap: 0;
+
+    margin-bottom: 12px;
+
+    scrollbar-width: none;
+
+    -ms-overflow-style: none;
+}
+
+.net-worth-stack::-webkit-scrollbar {
+    display: none;
+}
+
 .net-worth-card {
+
+    flex: 0 0 100%;
+
+    scroll-snap-align: center;
 
     background: #171717;
 
@@ -252,7 +275,7 @@ button {
 
     padding: 25px 22px;
 
-    margin-bottom: 24px;
+    box-sizing: border-box;
 }
 
 .net-worth-card.secondary-card {
@@ -264,21 +287,13 @@ button {
     border: 1px solid #e8e8e8;
 
     box-shadow: 0 2px 10px rgba(0,0,0,.04);
-
-    margin-top: -12px;
-
-    margin-bottom: 24px;
 }
 
 .net-worth-card.secondary-card .small-title {
-
     color: #888;
 }
 
 .net-worth-card.secondary-card .net-worth {
-
-    font-size: 26px;
-
     color: #2f80ed;
 }
 
@@ -301,12 +316,44 @@ button {
 }
 
 .net-worth.secondary {
+    font-size: 32px;
+}
 
-    font-size: 26px;
 
-    font-weight: 800;
+/* 스택 인디케이터 (점) */
 
-    letter-spacing: -1px;
+.stack-dots {
+
+    display: flex;
+
+    justify-content: center;
+
+    gap: 6px;
+
+    margin-bottom: 20px;
+}
+
+.stack-dots .dot {
+
+    width: 6px;
+    height: 6px;
+
+    border-radius: 50%;
+
+    background: #d0d0d0;
+
+    transition: .2s;
+
+    cursor: pointer;
+}
+
+.stack-dots .dot.active {
+
+    background: #171717;
+
+    width: 18px;
+
+    border-radius: 3px;
 }
 
 
@@ -948,59 +995,6 @@ button {
 
 
 /* =========================
-   LONG PRESS MENU
-========================= */
-
-.context-menu {
-
-    position: fixed;
-
-    display: none;
-
-    z-index: 5000;
-
-    background: #171717;
-
-    border-radius: 12px;
-
-    padding: 4px;
-
-    box-shadow: 0 8px 25px rgba(0,0,0,.22);
-
-    white-space: nowrap;
-
-    user-select: none;
-}
-
-.context-menu.show {
-    display: flex;
-}
-
-.context-menu button {
-
-    height: 38px;
-
-    padding: 0 15px;
-
-    color: white;
-
-    font-size: 13px;
-
-    font-weight: 700;
-
-    border-radius: 8px;
-
-    cursor: pointer;
-
-    user-select: none;
-}
-
-.context-menu button:active {
-    background: rgba(255,255,255,.15);
-}
-
-
-/* =========================
    EMPTY
 ========================= */
 
@@ -1342,6 +1336,95 @@ button {
     font-size: 14px;
 
     text-align: center;
+}
+
+
+/* =========================
+   INPUT SWIPE ROW
+========================= */
+
+.swipe-row {
+
+    position: relative;
+
+    overflow: hidden;
+
+    background: #fafafa;
+}
+
+.swipe-row.input-row-swipe {
+    background: #f8f8f8;
+    border-bottom: 1px solid #eee;
+}
+
+.swipe-content {
+
+    position: relative;
+
+    z-index: 2;
+
+    background: inherit;
+
+    will-change: transform;
+
+    touch-action: pan-y;
+}
+
+.swipe-content.swiped {
+    transform: translateX(-190px);
+}
+
+.swipe-actions {
+
+    position: absolute;
+
+    top: 0;
+    right: 0;
+
+    height: 100%;
+
+    display: flex;
+
+    align-items: stretch;
+
+    z-index: 1;
+}
+
+.swipe-action-btn {
+
+    width: 62px;
+
+    min-width: 62px;
+
+    height: 100%;
+
+    border: 0;
+
+    color: white;
+
+    font-size: 13px;
+
+    font-weight: 700;
+
+    cursor: pointer;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+}
+
+.swipe-action-btn.edit {
+    background: #2f80ed;
+}
+
+.swipe-action-btn.add {
+    background: #27ae60;
+}
+
+.swipe-action-btn.delete {
+    background: #eb5757;
 }
 
 
