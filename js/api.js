@@ -3301,7 +3301,7 @@ async function renderInvestment() {
 async function loadHoldings() {
     const { data, error } = await supabaseClient
         .from("investment_holdings")
-        .select("id, middle_id, name, buy_amount, shares, memo")
+        .select("id, middle_id, name, buy_amount, shares, memo, current_amount")
         .order("middle_id", { ascending: true })
         .order("id", { ascending: true });
 
@@ -3317,8 +3317,8 @@ async function loadHoldings() {
         name: row.name,
         buyAmount: Number(row.buy_amount) || 0,
         shares: row.shares === null ? null : Number(row.shares),
-        memo: row.memo || ""
-        currentAmount: Number(row.memo) || 0 
+        memo: row.memo || "",
+        currentAmount: Number(row.current_amount) || 0
     }));
 
     holdingsLoaded = true;
