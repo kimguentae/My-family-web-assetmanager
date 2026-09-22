@@ -124,6 +124,12 @@ let goals = loadGoals();
 
 let longPressTarget = null;
 
+// 투자자산
+let buyAmounts = {};           // { [childId]: { id, middleId, buyAmount } }
+let buyAmountsLoaded = false;
+let latestValuesCache = {};    // 최신 입력탭 values
+let latestValuesDate = null;   // 최신 입력탭 날짜
+
 
 /* ==================================================
    시작
@@ -958,7 +964,6 @@ function showContextMenu(target, event) {
 
     longPressTarget = target;
 
-    // 액션 버튼 표시/숨김
     const editBtn = menu.querySelector('[data-action="edit"]');
     const addBtn = menu.querySelector('[data-action="add"]');
     const delBtn = menu.querySelector('[data-action="delete"]');
@@ -1034,16 +1039,12 @@ function handleContextAction(action, target) {
    CUSTOM MODAL
 ================================================== */
 
-let modalResolve = null;
-
 function openModal(options) {
     return new Promise(function (resolve) {
         const backdrop = document.getElementById("modalBackdrop");
-        const sheet = document.getElementById("modalSheet");
         const titleEl = document.getElementById("modalTitle");
         const descEl = document.getElementById("modalDesc");
         const inputEl = document.getElementById("modalInput");
-        const actionsEl = document.getElementById("modalActions");
         const cancelBtn = document.getElementById("modalCancel");
         const confirmBtn = document.getElementById("modalConfirm");
 
@@ -1058,6 +1059,9 @@ function openModal(options) {
 
         if (options.type === "prompt") {
             inputEl.style.display = "";
+            inputEl.type = "text";
+            inputEl.inputMode = options.numeric ? "numeric" : "text";
+            inputEl.pattern = options.numeric ? "[0-9]*" : "";
             inputEl.value = options.value || "";
             inputEl.placeholder = options.placeholder || "";
             setTimeout(() => { inputEl.focus(); inputEl.select(); }, 100);
@@ -1076,7 +1080,6 @@ function openModal(options) {
             cancelBtn.removeEventListener("click", onCancel);
             confirmBtn.removeEventListener("click", onConfirm);
             inputEl.removeEventListener("keydown", onKey);
-            modalResolve = null;
         }
 
         function onCancel() {
@@ -1101,8 +1104,6 @@ function openModal(options) {
         cancelBtn.addEventListener("click", onCancel);
         confirmBtn.addEventListener("click", onConfirm);
         inputEl.addEventListener("keydown", onKey);
-
-        modalResolve = resolve;
     });
 }
 
@@ -1144,7 +1145,86 @@ async function modalAlert(title, desc) {
 
 
 /* ==================================================
-   금액 입력
+   숫자 전용 모달 (숫자 키보드 자동)
+================================================== */
+
+function openNumberModal(options) {
+    return new Promise(function (resolve) {
+        const backdrop = document.getElementById("modalBackdrop");
+        const titleEl = document.getElementById("modalTitle");
+        const descEl = document.getElementById("modalDesc");
+        const inputEl = document.getElementById("modalInput");
+        const cancelBtn = document.getElementById("modalCancel");
+        const confirmBtn = document.getElementById("modalConfirm");
+
+        if (!backdrop) {
+            resolve(null);
+            return;
+        }
+
+        titleEl.textContent = options.title || "";
+        descEl.textContent = options.desc || "";
+        descEl.style.display = options.desc ? "" : "none";
+
+        inputEl.style.display = "";
+        inputEl.type = "text";
+        inputEl.inputMode = "numeric";
+        inputEl.pattern = "[0-9]*";
+        inputEl.autocomplete = "off";
+        inputEl.placeholder = "0";
+        inputEl.value = options.value ? formatNumber(options.value) : "";
+
+        function formatInput() {
+            const raw = inputEl.value.replace(/[^0-9]/g, "");
+            inputEl.value = raw ? formatNumber(raw) : "";
+        }
+        inputEl.addEventListener("input", formatInput);
+
+        cancelBtn.style.display = "";
+        confirmBtn.textContent = "저장";
+        confirmBtn.classList.remove("danger");
+
+        backdrop.classList.add("show");
+
+        setTimeout(() => {
+            inputEl.focus();
+            inputEl.select();
+        }, 100);
+
+        function cleanup() {
+            backdrop.classList.remove("show");
+            inputEl.removeEventListener("input", formatInput);
+            cancelBtn.removeEventListener("click", onCancel);
+            confirmBtn.removeEventListener("click", onConfirm);
+            inputEl.removeEventListener("keydown", onKey);
+        }
+
+        function onCancel() {
+            cleanup();
+            resolve(null);
+        }
+
+        function onConfirm() {
+            const raw = inputEl.value.replace(/[^0-9]/g, "");
+            const num = raw ? Number(raw) : 0;
+            cleanup();
+            resolve(num);
+        }
+
+        function onKey(e) {
+            if (e.key === "Enter") { e.preventDefault(); onConfirm(); }
+            if (e.key === "Escape") { e.preventDefault(); onCancel(); }
+        }
+
+        cancelBtn.addEventListener("click", onCancel);
+        confirmBtn.addEventListener("click", onConfirm);
+        inputEl.addEventListener("keydown", onKey);
+    });
+}
+
+
+/* ==================================================
+   금액 입력 (입력탭)
 ================================================== */
 
 function attachMoneyInput(input, item, kind) {
@@ -2339,7 +2419,6 @@ function createMetricCards() {
                 const sign = diff > 0 ? "+" : "−";
                 const abs = Math.abs(diff);
 
-                // 요청: + 는 빨강, − 는 파랑 (부채는 반대)
                 let cls;
                 if (item.invert) cls = diff > 0 ? "down" : "up";
                 else cls = diff > 0 ? "up" : "down";
@@ -2367,7 +2446,7 @@ function createMetricCards() {
 
 
 /* ==================================================
-   Donut (조각 위 텍스트 + 클릭 확대)
+   Donut
 ================================================== */
 
 function createDonutCard() {
@@ -2419,7 +2498,6 @@ function createDonutCard() {
         legend.appendChild(item);
     });
 
-    // 클릭 시 확대/강조
     function highlightSlice(index) {
         const svg = svgWrap.querySelector("svg");
         if (!svg) return;
@@ -2434,7 +2512,6 @@ function createDonutCard() {
         });
     }
 
-    // 도넛 조각 클릭
     setTimeout(() => {
         const svg = svgWrap.querySelector("svg");
         if (svg) {
@@ -2504,7 +2581,6 @@ function createDonutSVG(data, total, size) {
 
         svg.appendChild(path);
 
-        // 조각 위 텍스트 (10% 이상만)
         if (pct >= 8) {
             const tr = r;
             const tx = cx + tr * Math.cos(midAngle);
@@ -2860,8 +2936,6 @@ function createLineChart(options) {
 
     if (maxValue <= 0) maxValue = 100;
     if (minValue === Infinity) minValue = 0;
-
-    // 0 포함
     if (minValue > 0) minValue = 0;
 
     const range = maxValue - minValue || 1;
@@ -2989,7 +3063,7 @@ function createLineChart(options) {
 
 
 /* ==================================================
-   Candle chart (B방식: 순자산 값을 캔들로)
+   Candle chart
 ================================================== */
 
 function createCandleChart(container, data) {
@@ -3027,7 +3101,6 @@ function createCandleChart(container, data) {
     tooltip.className = "chart-tooltip";
     container.appendChild(tooltip);
 
-    // 그리드
     const gridCount = 4;
     for (let i = 0; i <= gridCount; i++) {
         const ratio = i / gridCount;
@@ -3063,7 +3136,6 @@ function createCandleChart(container, data) {
         (chartWidth - candleGap * (data.length - 1)) / data.length
     );
 
-    // 각 캔들의 중심 x
     function getCX(index) {
         return padding.left + index * (candleWidth + candleGap) + candleWidth / 2;
     }
@@ -3072,7 +3144,6 @@ function createCandleChart(container, data) {
         const cx = getCX(index);
         const y = getY(point.value);
 
-        // 이전 시점 값 (없으면 자기 자신)
         const prevValue = index === 0 ? point.value : data[index - 1].value;
         const prevY = getY(prevValue);
 
@@ -3080,11 +3151,9 @@ function createCandleChart(container, data) {
         const bodyBottom = Math.max(y, prevY);
         const bodyHeight = Math.max(2, bodyBottom - bodyTop);
 
-        // 색상: 순자산 증가 = 빨강, 감소 = 파랑
         const isUp = point.value >= prevValue;
         const color = isUp ? "#eb5757" : "#2f80ed";
 
-        // 심지: 이전값~현재값 범위 살짝 확장해서 표현
         const wickTop = Math.min(y, prevY) - 6;
         const wickBottom = Math.max(y, prevY) + 6;
 
@@ -3097,7 +3166,6 @@ function createCandleChart(container, data) {
         wick.setAttribute("stroke-width", 1.5);
         svg.appendChild(wick);
 
-        // 몸통
         const rect = document.createElementNS(ns, "rect");
         rect.setAttribute("x", cx - candleWidth / 2);
         rect.setAttribute("y", bodyTop);
@@ -3108,7 +3176,6 @@ function createCandleChart(container, data) {
         rect.setAttribute("class", "candle-body");
         svg.appendChild(rect);
 
-        // x축 라벨
         const shouldShow =
             data.length <= 6 ||
             index === 0 ||
@@ -3125,7 +3192,6 @@ function createCandleChart(container, data) {
             svg.appendChild(text);
         }
 
-        // 히트 영역
         const hit = document.createElementNS(ns, "rect");
         hit.setAttribute("x", cx - candleWidth / 2 - 3);
         hit.setAttribute("y", padding.top);
@@ -3161,7 +3227,6 @@ function createCandleChart(container, data) {
 ================================================== */
 
 function showChartTooltip(container, tooltip, date, seriesName, value, x, y) {
-    // 요청: ₩ 뒤에 + 없이 그냥 금액
     const abs = Math.abs(value);
     const sign = value < 0 ? "−" : "";
 
@@ -3234,37 +3299,7 @@ function formatFullDate(date) {
 
 
 /* ==================================================
-   Resize — 차트만 다시 그리기 (스크롤 초기화 방지)
-================================================== */
-
-let resizeTimer = null;
-
-window.addEventListener("resize", function () {
-    const page = document.getElementById("analysisPage");
-
-    if (!page || !page.classList.contains("active-page") || !analysisLoaded) return;
-
-    clearTimeout(resizeTimer);
-
-    resizeTimer = setTimeout(function () {
-        if (document.getElementById("netWorthChart"))       drawNetWorthChart();
-        if (document.getElementById("investmentChart"))     drawInvestmentChart();
-        if (document.getElementById("allocationChart"))     drawAllocationChart();
-        if (document.getElementById("candleChart"))         drawCandleChart();
-    }, 250);
-});
-
-/* ==================================================
-   INVESTMENT — 투자자산 종목 관리
-================================================== */
-
-let holdings = [];             // [{id, middle_id, name, buy_amount, shares, memo}, ...]
-let holdingsLoaded = false;
-let latestValuesCache = null;  // 가장 최근 날짜의 입력값 (현재금액 계산용)
-
-
-/* ==================================================
-   투자자산 탭 렌더
+   INVESTMENT — 투자자산 (입력탭 종목 + 매수금액)
 ================================================== */
 
 async function renderInvestment() {
@@ -3276,15 +3311,9 @@ async function renderInvestment() {
     </div>`;
 
     try {
-        // 1) 종목 불러오기
-        await loadHoldings();
-
-        // 2) 최신 입력값 불러오기 (현재금액 계산용)
+        await loadBuyAmounts();
         await loadLatestValues();
-
-        // 3) 렌더
         renderInvestmentUI(container);
-
     } catch (e) {
         console.error("Investment load error:", e);
         container.innerHTML = `<div class="analysis-card">
@@ -3294,106 +3323,76 @@ async function renderInvestment() {
 }
 
 
-/* ==================================================
-   종목 로드
-================================================== */
-
-async function loadHoldings() {
+async function loadBuyAmounts() {
     const { data, error } = await supabaseClient
         .from("investment_holdings")
-        .select("id, middle_id, name, buy_amount, shares, memo, current_amount")
-        .order("middle_id", { ascending: true })
+        .select("id, middle_id, name, buy_amount")
         .order("id", { ascending: true });
 
     if (error) {
-        console.error("loadHoldings error:", error);
-        holdings = [];
+        console.error("loadBuyAmounts error:", error);
+        buyAmounts = {};
         return;
     }
 
-    holdings = (data || []).map(row => ({
-        id: row.id,
-        middleId: row.middle_id,
-        name: row.name,
-        buyAmount: Number(row.buy_amount) || 0,
-        shares: row.shares === null ? null : Number(row.shares),
-        memo: row.memo || "",
-        currentAmount: Number(row.current_amount) || 0
-    }));
+    buyAmounts = {};
 
-    holdingsLoaded = true;
+    (data || []).forEach(row => {
+        // name 컬럼에 child_id 를 저장하는 규칙
+        buyAmounts[row.name] = {
+            id: row.id,
+            middleId: row.middle_id,
+            buyAmount: Number(row.buy_amount) || 0
+        };
+    });
+
+    buyAmountsLoaded = true;
 }
 
 
-/* ==================================================
-   최신 입력값 (현재금액 계산용)
-================================================== */
-
 async function loadLatestValues() {
-    // 가장 최근 base_date 의 values 를 가져옴
     const { data, error } = await supabaseClient
         .from("asset_records")
-        .select("id, middle_id, name, buy_amount, shares, memo, current_amount")
+        .select("base_date, values")
         .order("base_date", { ascending: false })
         .limit(1)
         .maybeSingle();
 
     if (error || !data) {
-        latestValuesCache = { date: null, values: {} };
+        latestValuesCache = {};
+        latestValuesDate = null;
+
+        try {
+            const localKeys = Object.keys(localStorage)
+                .filter(k => k.startsWith("myAssetValues_"))
+                .sort()
+                .reverse();
+
+            if (localKeys.length > 0) {
+                latestValuesCache = JSON.parse(localStorage.getItem(localKeys[0]) || "{}");
+                latestValuesDate = localKeys[0].replace("myAssetValues_", "");
+            }
+        } catch (e) { /* ignore */ }
+
         return;
     }
 
-    latestValuesCache = {
-        date: data.base_date,
-        values: data.values || {}
-    };
+    latestValuesCache = data.values || {};
+    latestValuesDate = data.base_date;
 }
 
-
-/* ==================================================
-   현재가 조회
-   - 우선순위:
-     1) 최신 입력값에 소분류 id 가 있으면 그 값
-     2) 없으면 종목이 속한 중분류의 합계
-================================================== */
-
-function getCurrentValueForHolding(holding) {
-    if (!latestValuesCache) return 0;
-
-    const values = latestValuesCache.values || {};
-
-    // 소분류 id 매칭: 종목 이름이 소분류 이름과 같으면 매칭되는 걸 찾아서 사용
-    // (기본 트리에는 소분류가 없으므로 대부분 중분류 합계로 처리)
-    // 여기서는 단순하게 '종목이 속한 중분류 금액'을 그대로 나눠쓰지 않고
-    // 각 종목의 현재금액을 별도로 관리하도록 'shares' 기반이 아니면
-    // 종목 입력 시 current_amount 를 별도로 받도록 확장 가능.
-    //
-    // 요구사항: "기존 입력탭 최근꺼 자산을 가져와야지" → 중분류 합계로 계산
-    // 하지만 종목별로 나눠야 하니, 종목별 '현재금액'은 사용자가 매번 입력하기로 함.
-
-    // 여기서는 종목에 저장된 currentAmount 를 그대로 사용 (아래에서 처리)
-    return Number(holding.currentAmount) || 0;
-}
-
-
-/* ==================================================
-   투자자산 UI
-================================================== */
 
 function renderInvestmentUI(container) {
     container.innerHTML = "";
 
-    // 최신 입력값 날짜 배지
     const dateBadge = document.createElement("div");
     dateBadge.className = "inv-date-badge";
-    dateBadge.textContent = latestValuesCache && latestValuesCache.date
-        ? `현재금액 기준: ${formatFullDate(latestValuesCache.date)}`
+    dateBadge.textContent = latestValuesDate
+        ? `현재금액 기준: ${formatFullDate(latestValuesDate)}`
         : `현재금액 기준: 입력값 없음`;
     container.appendChild(dateBadge);
 
-    // 투자자산 대분류 찾기
     const investRoot = tree.find(t => t.id === "asset_investment");
-
     if (!investRoot) {
         const empty = document.createElement("div");
         empty.className = "analysis-card";
@@ -3402,20 +3401,13 @@ function renderInvestmentUI(container) {
         return;
     }
 
-    // 전체 요약 카드
-    const summary = createInvestmentSummaryCard(investRoot);
-    container.appendChild(summary);
+    container.appendChild(createInvestmentSummaryCard(investRoot));
 
-    // 중분류별 카드
     (investRoot.children || []).forEach(middle => {
         container.appendChild(createInvestmentGroupCard(middle));
     });
 }
 
-
-/* ==================================================
-   전체 요약 카드
-================================================== */
 
 function createInvestmentSummaryCard(investRoot) {
     const card = document.createElement("section");
@@ -3425,12 +3417,10 @@ function createInvestmentSummaryCard(investRoot) {
     let totalCurrent = 0;
 
     (investRoot.children || []).forEach(middle => {
-        holdings
-            .filter(h => h.middleId === middle.id)
-            .forEach(h => {
-                totalBuy += Number(h.buyAmount) || 0;
-                totalCurrent += getHoldingCurrentValue(h, middle);
-            });
+        (middle.children || []).forEach(child => {
+            totalBuy += Number(buyAmounts[child.id]?.buyAmount || 0);
+            totalCurrent += Number(latestValuesCache[child.id] || 0);
+        });
     });
 
     const diff = totalCurrent - totalBuy;
@@ -3466,56 +3456,28 @@ function createInvestmentSummaryCard(investRoot) {
 }
 
 
-/* ==================================================
-   종목의 현재금액 계산
-   - 종목이 소분류 id 와 이름이 같으면 그 값
-   - 아니면 종목에 저장된 currentAmount 값
-   - 없으면 0
-================================================== */
-
-function getHoldingCurrentValue(holding, middle) {
-    if (!latestValuesCache) return 0;
-
-    const values = latestValuesCache.values || {};
-
-    // 1) 소분류 id 매칭
-    const matched = (middle.children || []).find(c => c.name === holding.name);
-    if (matched && Object.prototype.hasOwnProperty.call(values, matched.id)) {
-        return Number(values[matched.id]) || 0;
-    }
-
-    // 2) 종목 자체에 저장된 currentAmount
-    return Number(holding.currentAmount) || 0;
-}
-
-
-/* ==================================================
-   중분류 그룹 카드
-================================================== */
-
 function createInvestmentGroupCard(middle) {
     const card = document.createElement("section");
     card.className = "analysis-card investment-group";
 
-    const groupHoldings = holdings.filter(h => h.middleId === middle.id);
+    const children = middle.children || [];
 
     let groupBuy = 0;
     let groupCurrent = 0;
 
-    groupHoldings.forEach(h => {
-        groupBuy += Number(h.buyAmount) || 0;
-        groupCurrent += getHoldingCurrentValue(h, middle);
+    children.forEach(child => {
+        groupBuy += Number(buyAmounts[child.id]?.buyAmount || 0);
+        groupCurrent += Number(latestValuesCache[child.id] || 0);
     });
 
     const groupDiff = groupCurrent - groupBuy;
     const groupPct = groupBuy > 0 ? (groupDiff / groupBuy * 100) : 0;
 
-    const title = document.createElement("div");
-    title.className = "analysis-title";
-
     const groupCls = groupDiff > 0 ? "pos" : groupDiff < 0 ? "neg" : "zero";
     const groupSign = groupDiff > 0 ? "+" : groupDiff < 0 ? "−" : "";
 
+    const title = document.createElement("div");
+    title.className = "analysis-title";
     title.innerHTML = `
         <div class="inv-group-name">${escapeHtml(middle.name)}</div>
         <div class="inv-group-total ${groupCls}">
@@ -3523,48 +3485,33 @@ function createInvestmentGroupCard(middle) {
             <span class="inv-pct">(${groupSign}${Math.abs(groupPct).toFixed(2)}%)</span>
         </div>
     `;
-
     card.appendChild(title);
 
-    // 종목 리스트
     const list = document.createElement("div");
     list.className = "inv-holdings-list";
 
-    if (groupHoldings.length === 0) {
+    if (children.length === 0) {
         const empty = document.createElement("div");
         empty.className = "inv-empty";
-        empty.textContent = "종목이 없습니다. 아래 버튼으로 추가하세요.";
+        empty.textContent = "입력탭에서 종목을 먼저 추가해주세요.";
         list.appendChild(empty);
     } else {
-        groupHoldings.forEach(h => {
-            list.appendChild(createHoldingRow(h, middle));
+        children.forEach(child => {
+            list.appendChild(createHoldingRow(child, middle));
         });
     }
 
     card.appendChild(list);
-
-    // 추가 버튼
-    const addBtn = document.createElement("button");
-    addBtn.type = "button";
-    addBtn.className = "inv-add-btn";
-    addBtn.textContent = "＋ 종목 추가";
-    addBtn.addEventListener("click", () => addHolding(middle.id));
-    card.appendChild(addBtn);
-
     return card;
 }
 
 
-/* ==================================================
-   종목 행
-================================================== */
-
-function createHoldingRow(holding, middle) {
+function createHoldingRow(child, middle) {
     const row = document.createElement("div");
     row.className = "inv-holding-row";
 
-    const buy = Number(holding.buyAmount) || 0;
-    const current = getHoldingCurrentValue(holding, middle);
+    const buy = Number(buyAmounts[child.id]?.buyAmount || 0);
+    const current = Number(latestValuesCache[child.id] || 0);
     const diff = current - buy;
     const pct = buy > 0 ? (diff / buy * 100) : 0;
 
@@ -3573,11 +3520,10 @@ function createHoldingRow(holding, middle) {
 
     row.innerHTML = `
         <div class="inv-holding-head">
-            <div class="inv-holding-name">${escapeHtml(holding.name)}</div>
-            <div class="inv-holding-actions">
-                <button type="button" class="inv-icon-btn edit" data-act="edit" title="수정">✎</button>
-                <button type="button" class="inv-icon-btn delete" data-act="delete" title="삭제">✕</button>
-            </div>
+            <div class="inv-holding-name">${escapeHtml(child.name)}</div>
+            <button type="button" class="inv-edit-buy" data-act="editBuy">
+                매수금액 ${buy > 0 ? "수정" : "입력"}
+            </button>
         </div>
 
         <div class="inv-holding-body">
@@ -3604,122 +3550,91 @@ function createHoldingRow(holding, middle) {
         </div>
     `;
 
-    row.querySelector('[data-act="edit"]').addEventListener("click", (e) => {
+    row.querySelector('[data-act="editBuy"]').addEventListener("click", (e) => {
         e.stopPropagation();
-        editHolding(holding.id);
-    });
-
-    row.querySelector('[data-act="delete"]').addEventListener("click", (e) => {
-        e.stopPropagation();
-        deleteHolding(holding.id);
+        openBuyAmountEditor(child, middle);
     });
 
     return row;
 }
 
 
+async function openBuyAmountEditor(child, middle) {
+    const existing = buyAmounts[child.id];
+    const initial = existing ? Number(existing.buyAmount) || 0 : 0;
+
+    const result = await openNumberModal({
+        title: "매수금액 입력",
+        desc: `"${child.name}"의 총 매수금액 (₩)`,
+        value: initial
+    });
+
+    if (result === null) return;
+
+    const buyAmount = Number(result) || 0;
+
+    if (existing && existing.id) {
+        const { error } = await supabaseClient
+            .from("investment_holdings")
+            .update({
+                buy_amount: buyAmount,
+                middle_id: middle.id,
+                name: child.id
+            })
+            .eq("id", existing.id);
+
+        if (error) {
+            console.error("update buy error:", error);
+            await modalAlert("저장 실패", error.message || "저장할 수 없습니다.");
+            return;
+        }
+    } else {
+        const { data, error } = await supabaseClient
+            .from("investment_holdings")
+            .insert({
+                middle_id: middle.id,
+                name: child.id,
+                buy_amount: buyAmount
+            })
+            .select()
+            .single();
+
+        if (error) {
+            console.error("insert buy error:", error);
+            await modalAlert("저장 실패", error.message || "저장할 수 없습니다.");
+            return;
+        }
+
+        if (data) {
+            buyAmounts[child.id] = {
+                id: data.id,
+                middleId: middle.id,
+                buyAmount: Number(data.buy_amount) || 0
+            };
+        }
+    }
+
+    await renderInvestment();
+}
+
+
 /* ==================================================
-   종목 CRUD
+   Resize — 차트만 다시 그리기 (스크롤 초기화 방지)
 ================================================== */
 
-async function addHolding(middleId) {
-    const name = await modalPrompt("종목 추가", "", { placeholder: "종목명" });
-    if (!name) return;
+let resizeTimer = null;
 
-    const buyStr = await modalPrompt("매수금액 입력 (₩)", "", {
-        desc: `"${name}"의 총 매수금액`,
-        placeholder: "예: 1000000"
-    });
-    if (buyStr === null) return;
+window.addEventListener("resize", function () {
+    const page = document.getElementById("analysisPage");
 
-    const buyAmount = Number(String(buyStr).replace(/[^0-9]/g, "")) || 0;
+    if (!page || !page.classList.contains("active-page") || !analysisLoaded) return;
 
-    const currentStr = await modalPrompt("현재금액 입력 (₩)", "", {
-        desc: `"${name}"의 현재 평가금액`,
-        placeholder: "예: 1200000"
-    });
-    if (currentStr === null) return;
+    clearTimeout(resizeTimer);
 
-    const currentAmount = Number(String(currentStr).replace(/[^0-9]/g, "")) || 0;
-
-    const { error } = await supabaseClient
-        .from("investment_holdings")
-        .insert({
-            middle_id: middleId,
-            name: name,
-            buy_amount: buyAmount,
-            current_amount: currentAmount
-        });
-
-    if (error) {
-        console.error("addHolding error:", error);
-        await modalAlert("저장 실패", error.message || "종목을 저장할 수 없습니다.");
-        return;
-    }
-
-    await renderInvestment();
-}
-
-
-async function editHolding(id) {
-    const holding = holdings.find(h => h.id === id);
-    if (!holding) return;
-
-    const name = await modalPrompt("종목명 수정", holding.name);
-    if (!name) return;
-
-    const buyStr = await modalPrompt("매수금액 수정 (₩)", formatNumber(holding.buyAmount));
-    if (buyStr === null) return;
-
-    const buyAmount = Number(String(buyStr).replace(/[^0-9]/g, "")) || 0;
-
-    const currentStr = await modalPrompt(
-        "현재금액 수정 (₩)",
-        formatNumber(holding.currentAmount || 0)
-    );
-    if (currentStr === null) return;
-
-    const currentAmount = Number(String(currentStr).replace(/[^0-9]/g, "")) || 0;
-
-    const { error } = await supabaseClient
-        .from("investment_holdings")
-        .update({
-            name: name,
-            buy_amount: buyAmount,
-            current_amount: currentAmount
-        })
-        .eq("id", id);
-
-    if (error) {
-        console.error("editHolding error:", error);
-        await modalAlert("수정 실패", error.message || "수정할 수 없습니다.");
-        return;
-    }
-
-    await renderInvestment();
-}
-
-
-async function deleteHolding(id) {
-    const holding = holdings.find(h => h.id === id);
-    if (!holding) return;
-
-    const ok = await modalConfirm(`"${holding.name}" 삭제`, "삭제하면 되돌릴 수 없습니다.", {
-        confirmText: "삭제",
-        danger: true
-    });
-    if (!ok) return;
-
-    const { error } = await supabaseClient
-        .from("investment_holdings")
-        .delete()
-        .eq("id", id);
-
-    if (error) {
-        console.error("deleteHolding error:", error);
-        await modalAlert("삭제 실패", error.message || "삭제할 수 없습니다.");
-        return;
-    }
-
-    await renderInvestment();
-}
+    resizeTimer = setTimeout(function () {
+        if (document.getElementById("netWorthChart"))       drawNetWorthChart();
+        if (document.getElementById("investmentChart"))     drawInvestmentChart();
+        if (document.getElementById("allocationChart"))     drawAllocationChart();
+        if (document.getElementById("candleChart"))         drawCandleChart();
+    }, 250);
+});
