@@ -249,6 +249,11 @@ function initNavigation() {
     });
 }
 
+function gotoInvestmentPage() {
+    // 네비게이션 클릭과 동일한 효과
+    const btn = document.querySelector('.nav-item[data-page="detail"]');
+    if (btn) btn.click();
+}
 
 /* ==================================================
    홈 순자산 카드 스택
@@ -2207,17 +2212,25 @@ async function renderAnalysis() {
                     setTimeout(() => drawCandleChart(), 0);
                     break;
 
-                case "investmentChart":
-                    container.appendChild(createChartCardWithLegend(
+                case "investmentChart": {
+                    const invCard = createChartCardWithLegend(
                         "투자자산 변동",
                         "investmentChart",
                         [
                             { cls: "stock-line", label: "주식" },
                             { cls: "coin-line",  label: "비트코인" }
                         ]
-                    ));
+                    );
+                    invCard.classList.add("clickable-card");
+                    invCard.addEventListener("click", function (e) {
+                        // 차트 내부 툴팁 클릭은 무시
+                        if (e.target.closest(".chart-tooltip")) return;
+                        gotoInvestmentPage();
+                    });
+                    container.appendChild(invCard);
                     setTimeout(() => drawInvestmentChart(), 0);
                     break;
+                }
 
                 case "contribution":
                     container.appendChild(createContributionCard());
@@ -3476,16 +3489,24 @@ function createInvestmentGroupCard(middle) {
     const groupCls = groupDiff > 0 ? "pos" : groupDiff < 0 ? "neg" : "zero";
     const groupSign = groupDiff > 0 ? "+" : groupDiff < 0 ? "−" : "";
 
-    const title = document.createElement("div");
-    title.className = "analysis-title";
-    title.innerHTML = `
-        <div class="inv-group-name">${escapeHtml(middle.name)}</div>
+    // 헤더 (접기/펼치기)
+    const header = document.createElement("div");
+    header.className = "inv-group-header";
+    header.innerHTML = `
+        <div class="inv-group-header-left">
+            <span class="inv-group-arrow">›</span>
+            <span class="inv-group-name">${escapeHtml(middle.name)}</span>
+        </div>
         <div class="inv-group-total ${groupCls}">
             ${groupSign}₩${formatNumber(Math.abs(groupDiff))}
             <span class="inv-pct">(${groupSign}${Math.abs(groupPct).toFixed(2)}%)</span>
         </div>
     `;
-    card.appendChild(title);
+    card.appendChild(header);
+
+    // 바디 (종목 리스트)
+    const body = document.createElement("div");
+    body.className = "inv-group-body";
 
     const list = document.createElement("div");
     list.className = "inv-holdings-list";
@@ -3501,7 +3522,15 @@ function createInvestmentGroupCard(middle) {
         });
     }
 
-    card.appendChild(list);
+    body.appendChild(list);
+    card.appendChild(body);
+
+    // 토글 이벤트
+    header.addEventListener("click", function () {
+        header.classList.toggle("open");
+        body.classList.toggle("open");
+    });
+
     return card;
 }
 

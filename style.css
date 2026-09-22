@@ -1816,3 +1816,55 @@ button {
         row-gap: 10px;
     }
 }
+
+/* =========================
+   INVESTMENT GROUP ACCORDION
+========================= */
+
+.inv-group-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 12px 4px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.inv-group-header-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+.inv-group-arrow {
+    font-size: 18px;
+    color: #999;
+    transition: transform .2s ease;
+    flex: 0 0 auto;
+    line-height: 1;
+}
+
+.inv-group-header.open .inv-group-arrow {
+    transform: rotate(90deg);
+}
+
+.inv-group-body {
+    display: none;
+    padding-top: 4px;
+}
+
+.inv-group-body.open {
+    display: block;
+}
+
+.analysis-card.clickable-card {
+    cursor: pointer;
+    transition: transform .12s ease, box-shadow .12s ease;
+}
+
+.analysis-card.clickable-card:active {
+    transform: scale(.985);
+    box-shadow: 0 2px 8px rgba(0,0,0,.08);
+}
