@@ -161,6 +161,13 @@ document.addEventListener("DOMContentLoaded", async function () {
 
     await loadDateData();
 
+    // 목표도 Supabase에서 갱신
+    const remoteGoals = await loadGoalsFromSupabase();
+    if (remoteGoals) {
+        goals = remoteGoals;
+        saveGoals();
+    }
+
 });
 
 
@@ -242,7 +249,7 @@ function initNavigation() {
             }
 
             if (page === "analysis") renderAnalysis();
-            if (page === "settings") renderSettings();
+            if (page === "settings") renderSettings();  // async지만 await 안 해도 됨
             if (page === "detail")   renderInvestment();
 
         });
@@ -1967,6 +1974,7 @@ function saveAnalysisConfig() {
 ================================================== */
 
 function loadGoals() {
+    // 로컬 캐시 (즉시 반환용)
     try {
         const stored = JSON.parse(localStorage.getItem("myAssetGoals") || "null");
         if (stored && typeof stored === "object") {
@@ -1980,6 +1988,57 @@ function loadGoals() {
     } catch (e) { /* ignore */ }
 
     return { netWorth: 0, excludingRealEstate: 0, investment: 0, fire: 0 };
+}
+
+
+async function loadGoalsFromSupabase() {
+    try {
+        const { data, error } = await supabaseClient
+            .from("user_goals")
+            .select("net_worth, excluding_real_estate, investment, fire")
+            .eq("id", 1)
+            .maybeSingle();
+
+        if (error || !data) return null;
+
+        return {
+            netWorth: Number(data.net_worth) || 0,
+            excludingRealEstate: Number(data.excluding_real_estate) || 0,
+            investment: Number(data.investment) || 0,
+            fire: Number(data.fire) || 0
+        };
+    } catch (e) {
+        console.error("loadGoalsFromSupabase error:", e);
+        return null;
+    }
+}
+
+
+async function saveGoalsToSupabase(g) {
+    try {
+        const { error } = await supabaseClient
+            .from("user_goals")
+            .upsert(
+                {
+                    id: 1,
+                    net_worth: g.netWorth,
+                    excluding_real_estate: g.excludingRealEstate,
+                    investment: g.investment,
+                    fire: g.fire,
+                    updated_at: new Date().toISOString()
+                },
+                { onConflict: "id" }
+            );
+
+        if (error) {
+            console.error("saveGoalsToSupabase error:", error);
+            return false;
+        }
+        return true;
+    } catch (e) {
+        console.error("saveGoalsToSupabase exception:", e);
+        return false;
+    }
 }
 
 
@@ -2016,9 +2075,9 @@ function initSettings() {
         });
     }
 
-    const goalSaveBtn = document.getElementById("goalSaveButton");
+      const goalSaveBtn = document.getElementById("goalSaveButton");
     if (goalSaveBtn) {
-        goalSaveBtn.addEventListener("click", function () {
+        goalSaveBtn.addEventListener("click", async function () {
             const fields = document.querySelectorAll(".goal-input-field");
 
             fields.forEach(f => {
@@ -2027,9 +2086,22 @@ function initSettings() {
                 goals[key] = Number(raw) || 0;
             });
 
+            // 로컬 저장 (즉시 반영)
             saveGoals();
 
-            goalSaveBtn.textContent = "저장 완료!";
+            goalSaveBtn.disabled = true;
+            goalSaveBtn.textContent = "저장 중...";
+
+            const ok = await saveGoalsToSupabase(goals);
+
+            goalSaveBtn.disabled = false;
+
+            if (ok) {
+                goalSaveBtn.textContent = "저장 완료!";
+            } else {
+                goalSaveBtn.textContent = "로컬만 저장됨";
+            }
+
             setTimeout(() => {
                 goalSaveBtn.textContent = "목표 저장";
             }, 1200);
@@ -2038,7 +2110,14 @@ function initSettings() {
 }
 
 
-function renderSettings() {
+async function renderSettings() {
+    // Supabase에서 최신 목표 불러오기
+    const remoteGoals = await loadGoalsFromSupabase();
+    if (remoteGoals) {
+        goals = remoteGoals;
+        saveGoals(); // 로컬 캐시도 갱신
+    }
+
     renderGoalSettings();
     renderAnalysisSettings();
     initSettingsAccordion();
