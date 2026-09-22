@@ -125,10 +125,10 @@ let goals = loadGoals();
 let longPressTarget = null;
 
 // 투자자산
-let buyAmounts = {};           // { [childId]: { id, middleId, buyAmount } }
+let buyAmounts = {};
 let buyAmountsLoaded = false;
-let latestValuesCache = {};    // 최신 입력탭 values
-let latestValuesDate = null;   // 최신 입력탭 날짜
+let latestValuesCache = {};
+let latestValuesDate = null;
 
 
 /* ==================================================
@@ -249,11 +249,12 @@ function initNavigation() {
     });
 }
 
+
 function gotoInvestmentPage() {
-    // 네비게이션 클릭과 동일한 효과
     const btn = document.querySelector('.nav-item[data-page="detail"]');
     if (btn) btn.click();
 }
+
 
 /* ==================================================
    홈 순자산 카드 스택
@@ -536,10 +537,21 @@ function createInputSection(type, name, container) {
     const header = document.createElement("div");
     header.className = "input-section-header swipe-content";
 
+    const sectionIcon = type === "debt"
+        ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+               <path d="M5 12h14"/>
+           </svg>`
+        : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+               <path d="M12 5v14"/>
+               <path d="M5 12h14"/>
+           </svg>`;
+
     header.innerHTML = `
         <div class="input-section-left">
             <div class="input-section-icon ${type === "debt" ? "debt" : ""}">
-                ${type === "debt" ? "−" : "+"}
+                ${sectionIcon}
             </div>
             <span>${escapeHtml(name)}</span>
         </div>
@@ -1150,7 +1162,7 @@ async function modalAlert(title, desc) {
 
 
 /* ==================================================
-   숫자 전용 모달 (숫자 키보드 자동)
+   숫자 전용 모달
 ================================================== */
 
 function openNumberModal(options) {
@@ -1670,10 +1682,21 @@ function renderHome(roots, containerId, values, isDebt) {
         const header = document.createElement("div");
         header.className = "category-header";
 
+        const iconSVG = isDebt
+            ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                   <path d="M5 12h14"/>
+               </svg>`
+            : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                   <path d="M12 5v14"/>
+                   <path d="M5 12h14"/>
+               </svg>`;
+
         header.innerHTML = `
             <div class="category-left">
                 <div class="category-icon ${isDebt ? "debt" : ""}">
-                    ${isDebt ? "−" : "+"}
+                    ${iconSVG}
                 </div>
                 <span>${escapeHtml(root.name)}</span>
             </div>
@@ -1966,7 +1989,7 @@ function saveGoals() {
 
 
 /* ==================================================
-   설정 초기화 및 렌더
+   설정
 ================================================== */
 
 function initSettings() {
@@ -2223,7 +2246,6 @@ async function renderAnalysis() {
                     );
                     invCard.classList.add("clickable-card");
                     invCard.addEventListener("click", function (e) {
-                        // 차트 내부 툴팁 클릭은 무시
                         if (e.target.closest(".chart-tooltip")) return;
                         gotoInvestmentPage();
                     });
@@ -3312,7 +3334,7 @@ function formatFullDate(date) {
 
 
 /* ==================================================
-   INVESTMENT — 투자자산 (입력탭 종목 + 매수금액)
+   INVESTMENT
 ================================================== */
 
 async function renderInvestment() {
@@ -3351,7 +3373,6 @@ async function loadBuyAmounts() {
     buyAmounts = {};
 
     (data || []).forEach(row => {
-        // name 컬럼에 child_id 를 저장하는 규칙
         buyAmounts[row.name] = {
             id: row.id,
             middleId: row.middle_id,
@@ -3489,7 +3510,6 @@ function createInvestmentGroupCard(middle) {
     const groupCls = groupDiff > 0 ? "pos" : groupDiff < 0 ? "neg" : "zero";
     const groupSign = groupDiff > 0 ? "+" : groupDiff < 0 ? "−" : "";
 
-    // 헤더 (접기/펼치기)
     const header = document.createElement("div");
     header.className = "inv-group-header";
     header.innerHTML = `
@@ -3504,7 +3524,6 @@ function createInvestmentGroupCard(middle) {
     `;
     card.appendChild(header);
 
-    // 바디 (종목 리스트)
     const body = document.createElement("div");
     body.className = "inv-group-body";
 
@@ -3525,7 +3544,6 @@ function createInvestmentGroupCard(middle) {
     body.appendChild(list);
     card.appendChild(body);
 
-    // 토글 이벤트
     header.addEventListener("click", function () {
         header.classList.toggle("open");
         body.classList.toggle("open");
@@ -3648,7 +3666,7 @@ async function openBuyAmountEditor(child, middle) {
 
 
 /* ==================================================
-   Resize — 차트만 다시 그리기 (스크롤 초기화 방지)
+   Resize
 ================================================== */
 
 let resizeTimer = null;

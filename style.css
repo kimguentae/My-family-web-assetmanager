@@ -338,11 +338,23 @@ button {
     align-items: center;
     justify-content: center;
     font-size: 18px;
+    color: #333;
+}
+
+.category-icon svg {
+    width: 20px;
+    height: 20px;
+    display: block;
 }
 
 .category-icon.debt {
     background: #f4eeee;
     color: #b33b3b;
+}
+
+.category-icon.debt svg {
+    width: 18px;
+    height: 18px;
 }
 
 .category-right {
@@ -429,11 +441,23 @@ button {
     align-items: center;
     justify-content: center;
     font-size: 18px;
+    color: #333;
+}
+
+.input-section-icon svg {
+    width: 20px;
+    height: 20px;
+    display: block;
 }
 
 .input-section-icon.debt {
     background: #f4eeee;
     color: #b33b3b;
+}
+
+.input-section-icon.debt svg {
+    width: 18px;
+    height: 18px;
 }
 
 .input-section-arrow {
@@ -704,6 +728,13 @@ button {
     justify-content: center;
     font-size: 30px;
     margin-bottom: 18px;
+    color: #555;
+}
+
+.empty-icon svg {
+    width: 34px;
+    height: 34px;
+    display: block;
 }
 
 .empty-page h2 { margin: 0; }
@@ -747,7 +778,21 @@ button {
     font-weight: 800;
 }
 
-.nav-icon { font-size: 23px; line-height: 1; }
+.nav-icon {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: inherit;
+}
+
+.nav-icon svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
 .nav-item span { font-size: 11px; }
 
 
@@ -764,6 +809,16 @@ button {
     margin-bottom: 16px;
     box-shadow: 0 2px 10px rgba(0,0,0,.04);
     overflow: hidden;
+}
+
+.analysis-card.clickable-card {
+    cursor: pointer;
+    transition: transform .12s ease, box-shadow .12s ease;
+}
+
+.analysis-card.clickable-card:active {
+    transform: scale(.985);
+    box-shadow: 0 2px 8px rgba(0,0,0,.08);
 }
 
 .analysis-title {
@@ -922,7 +977,6 @@ button {
     margin-top: 5px;
 }
 
-/* 요청: + 는 빨강, − 는 파랑 */
 .metric-delta.up { color: #eb5757; }
 .metric-delta.down { color: #2f80ed; }
 .metric-delta.neutral { color: #999; }
@@ -1430,7 +1484,7 @@ button {
 
 
 /* =========================
-   CUSTOM MODAL (iOS 스타일)
+   CUSTOM MODAL (iOS)
 ========================= */
 
 .modal-backdrop {
@@ -1548,7 +1602,7 @@ button {
 
 
 /* =========================
-   CONTEXT MENU (롱프레스)
+   CONTEXT MENU
 ========================= */
 
 .context-menu {
@@ -1594,35 +1648,6 @@ button {
     color: #eb5757;
 }
 
-
-/* =========================
-   MOBILE
-========================= */
-
-@media(max-width:480px) {
-
-    .page { padding: 16px; }
-    .header { padding: 0 16px; }
-    .logo { font-size: 21px; }
-    .date-wrap span { font-size: 14px; }
-
-    .money-input { width: 145px; flex-basis: 145px; }
-    .money-input input { width: 110px; }
-
-    .middle-money-input { width: 130px; flex-basis: 130px; }
-    .middle-money-input input { width: 95px; }
-
-    .analysis-card { padding: 16px 10px 10px; }
-    .chart-container,
-    .chart-container svg { min-height: 230px; height: 230px; }
-
-    .donut-wrap { flex-direction: column; gap: 12px; }
-    .donut-svg-wrap { width: 200px; height: 200px; }
-
-    .metric-value { font-size: 17px; }
-
-    .goal-input-label { flex-basis: 110px; font-size: 12px; }
-}
 
 /* =========================
    INVESTMENT (투자자산탭)
@@ -1703,119 +1728,6 @@ button {
 .investment-group .inv-group-total.neg { color: #2f80ed; }
 .investment-group .inv-group-total.zero { color: #999; }
 
-.inv-holdings-list {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    margin-bottom: 12px;
-}
-
-.inv-empty {
-    font-size: 13px;
-    color: #999;
-    padding: 16px 4px;
-    text-align: center;
-}
-
-.inv-holding-row {
-    background: #fafbfc;
-    border-radius: 12px;
-    padding: 12px 14px;
-    border: 1px solid #eef0f3;
-}
-
-.inv-holding-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    margin-bottom: 10px;
-}
-
-.inv-holding-name {
-    font-size: 15px;
-    font-weight: 800;
-    color: #171717;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.inv-holding-actions {
-    display: flex;
-    gap: 6px;
-}
-
-.inv-icon-btn {
-    width: 30px;
-    height: 30px;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 13px;
-    cursor: pointer;
-    border: 0;
-    background: #eef0f3;
-    color: #555;
-    font-weight: 800;
-}
-
-.inv-icon-btn.edit { background: #eaf1fc; color: #2f80ed; }
-.inv-icon-btn.delete { background: #fdeaea; color: #eb5757; }
-
-.inv-icon-btn:active { opacity: .7; }
-
-.inv-holding-body {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr 1fr;
-    gap: 8px;
-}
-
-.inv-holding-cell {
-    min-width: 0;
-}
-
-.inv-cell-label {
-    font-size: 10px;
-    color: #999;
-    margin-bottom: 4px;
-    font-weight: 600;
-}
-
-.inv-cell-value {
-    font-size: 13px;
-    font-weight: 800;
-    color: #171717;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.inv-cell-value.pos { color: #eb5757; }
-.inv-cell-value.neg { color: #2f80ed; }
-.inv-cell-value.zero { color: #999; }
-
-.inv-add-btn {
-    width: 100%;
-    height: 44px;
-    border-radius: 12px;
-    background: #f1f2f4;
-    color: #171717;
-    font-size: 14px;
-    font-weight: 800;
-    cursor: pointer;
-    border: 0;
-}
-
-.inv-add-btn:active { opacity: .7; }
-
-@media (max-width: 480px) {
-    .inv-holding-body {
-        grid-template-columns: 1fr 1fr;
-        row-gap: 10px;
-    }
-}
 
 /* =========================
    INVESTMENT GROUP ACCORDION
@@ -1859,12 +1771,119 @@ button {
     display: block;
 }
 
-.analysis-card.clickable-card {
-    cursor: pointer;
-    transition: transform .12s ease, box-shadow .12s ease;
+.inv-holdings-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 4px;
 }
 
-.analysis-card.clickable-card:active {
-    transform: scale(.985);
-    box-shadow: 0 2px 8px rgba(0,0,0,.08);
+.inv-empty {
+    font-size: 13px;
+    color: #999;
+    padding: 16px 4px;
+    text-align: center;
+}
+
+.inv-holding-row {
+    background: #fafbfc;
+    border-radius: 12px;
+    padding: 12px 14px;
+    border: 1px solid #eef0f3;
+}
+
+.inv-holding-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.inv-holding-name {
+    font-size: 15px;
+    font-weight: 800;
+    color: #171717;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.inv-edit-buy {
+    padding: 6px 12px;
+    border-radius: 10px;
+    background: #eaf1fc;
+    color: #2f80ed;
+    font-size: 12px;
+    font-weight: 800;
+    border: 0;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.inv-edit-buy:active { opacity: .7; }
+
+.inv-holding-body {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 8px;
+}
+
+.inv-holding-cell {
+    min-width: 0;
+}
+
+.inv-cell-label {
+    font-size: 10px;
+    color: #999;
+    margin-bottom: 4px;
+    font-weight: 600;
+}
+
+.inv-cell-value {
+    font-size: 13px;
+    font-weight: 800;
+    color: #171717;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.inv-cell-value.pos { color: #eb5757; }
+.inv-cell-value.neg { color: #2f80ed; }
+.inv-cell-value.zero { color: #999; }
+
+
+/* =========================
+   MOBILE
+========================= */
+
+@media(max-width:480px) {
+
+    .page { padding: 16px; }
+    .header { padding: 0 16px; }
+    .logo { font-size: 21px; }
+    .date-wrap span { font-size: 14px; }
+
+    .money-input { width: 145px; flex-basis: 145px; }
+    .money-input input { width: 110px; }
+
+    .middle-money-input { width: 130px; flex-basis: 130px; }
+    .middle-money-input input { width: 95px; }
+
+    .analysis-card { padding: 16px 10px 10px; }
+    .chart-container,
+    .chart-container svg { min-height: 230px; height: 230px; }
+
+    .donut-wrap { flex-direction: column; gap: 12px; }
+    .donut-svg-wrap { width: 200px; height: 200px; }
+
+    .metric-value { font-size: 17px; }
+
+    .goal-input-label { flex-basis: 110px; font-size: 12px; }
+
+    .inv-holding-body {
+        grid-template-columns: 1fr 1fr;
+        row-gap: 10px;
+    }
 }
