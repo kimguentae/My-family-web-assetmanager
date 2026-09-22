@@ -8,7 +8,7 @@
 ================================================== */
 
 const SUPABASE_URL = "https://ozejxesdcuyypkrxamnd.supabase.co";
-const SUPABASE_ANON_KEY = "여기에_본인_ANON_KEY_입력";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im96ZWp4ZXNkY3V5eXBrcnhhbW5kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk1NjE3MjksImV4cCI6MjEwNTEzNzcyOX0.Fcxd4ScWmJn7ZmfSmFyrNOX0MvXoZBSDn52uLV8R3GQ";
 
 const supabaseClient = window.supabase.createClient(
     SUPABASE_URL,
