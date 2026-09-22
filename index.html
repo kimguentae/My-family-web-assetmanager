@@ -92,38 +92,64 @@
     </div>
 
 
-    <section class="section">
 
-        <div class="section-title">
+    <!-- =========================
+         자산 그룹 (탭하면 열림)
+    ========================== -->
 
-            <span>자산</span>
+    <div class="home-group" id="homeAssetGroup">
 
-            <span class="total">
+        <div class="home-group-header" data-group="asset">
+
+            <div class="home-group-title">
+                자산
+            </div>
+
+            <div class="home-group-total">
+
                 ₩
                 <span id="assetTotal">0</span>
-            </span>
+
+                <span class="arrow">›</span>
+
+            </div>
 
         </div>
 
 
-        <div id="homeAssets" class="category-card"></div>
+        <div class="home-group-body" id="homeAssets"></div>
+
+    </div>
 
 
-        <div class="section-title debt-section-title">
 
-            <span>부채</span>
+    <!-- =========================
+         부채 그룹 (탭하면 열림)
+    ========================== -->
 
-            <span class="total">
+    <div class="home-group" id="homeDebtGroup">
+
+        <div class="home-group-header" data-group="debt">
+
+            <div class="home-group-title">
+                부채
+            </div>
+
+            <div class="home-group-total">
+
                 ₩
                 <span id="debtTotal">0</span>
-            </span>
+
+                <span class="arrow">›</span>
+
+            </div>
 
         </div>
 
 
-        <div id="homeDebts" class="category-card"></div>
+        <div class="home-group-body" id="homeDebts"></div>
 
-    </section>
+    </div>
 
 </main>
 

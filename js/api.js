@@ -120,6 +120,8 @@ document.addEventListener(
 
         initNetWorthStack();
 
+        initHomeGroups();
+
         initGlobalSwipeReset();
 
         renderInput();
@@ -330,6 +332,48 @@ function initNetWorthStack() {
             );
 
     }
+
+}
+
+
+/* ==================================================
+   홈 자산 / 부채 그룹 토글
+================================================== */
+
+function initHomeGroups() {
+
+    document.querySelectorAll(".home-group-header")
+        .forEach(
+            header => {
+
+                header.addEventListener(
+                    "click",
+                    function () {
+
+                        const group =
+                            header.closest(".home-group");
+
+                        if (!group) {
+                            return;
+                        }
+
+
+                        const body =
+                            group.querySelector(".home-group-body");
+
+                        if (!body) {
+                            return;
+                        }
+
+
+                        header.classList.toggle("open");
+                        body.classList.toggle("open");
+
+                    }
+                );
+
+            }
+        );
 
 }
 
@@ -1960,7 +2004,6 @@ function updateHome() {
 
 /* ==================================================
    HOME RENDER
-   ⭐ 대분류 헤더만 보이고, 하위(중분류/소분류)는 클릭 시 열림
 ================================================== */
 
 function renderHome(roots, containerId, values, isDebt) {
@@ -1989,7 +2032,6 @@ function renderHome(roots, containerId, values, isDebt) {
             const header = document.createElement("div");
 
             header.className = "category-header";
-            // ⭐ open 클래스를 붙이지 않음 → 화살표 회전 안 됨
 
 
             header.innerHTML = `
@@ -2022,7 +2064,7 @@ function renderHome(roots, containerId, values, isDebt) {
             const list = document.createElement("div");
 
             list.className = "subcategory-list";
-            // ⭐ open 클래스 없음 → display:none 상태 (기본 접힘)
+            // 기본 접힘
 
 
             header.addEventListener(
@@ -2051,7 +2093,6 @@ function renderHome(roots, containerId, values, isDebt) {
                         const middleHeader = document.createElement("div");
 
                         middleHeader.className = "category-header";
-                        // ⭐ open 클래스 없음 → 기본 접힘
 
 
                         middleHeader.innerHTML = `
@@ -2078,7 +2119,7 @@ function renderHome(roots, containerId, values, isDebt) {
                         const children = document.createElement("div");
 
                         children.className = "subcategory-list";
-                        // ⭐ open 클래스 없음 → 기본 접힘
+                        // 기본 접힘
 
 
                         middleHeader.addEventListener(

@@ -267,7 +267,6 @@ button {
     box-sizing: border-box;
 }
 
-/* ⭐ 부동산 제외 순자산 카드도 검정 배경 */
 .net-worth-card.secondary-card {
 
     background: #171717;
@@ -346,50 +345,103 @@ button {
 
 
 /* =========================
-   SECTION
+   HOME GROUP (자산/부채)
 ========================= */
 
-.section {
-    margin-bottom: 25px;
+.home-group {
+
+    background: white;
+
+    border-radius: 18px;
+
+    margin-bottom: 14px;
+
+    box-shadow: 0 2px 10px rgba(0,0,0,.04);
+
+    overflow: hidden;
 }
 
-.section-title {
+.home-group-header {
+
+    min-height: 67px;
+
+    padding: 0 17px;
 
     display: flex;
 
-    justify-content: space-between;
     align-items: center;
 
-    margin-bottom: 11px;
+    justify-content: space-between;
+
+    cursor: pointer;
+
+    user-select: none;
+}
+
+.home-group-title {
 
     font-size: 19px;
 
     font-weight: 800;
 }
 
-.total {
+.home-group-total {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 8px;
+
     font-size: 15px;
+
+    font-weight: 700;
 }
 
-.debt-section-title {
-    margin-top: 30px;
+.home-group-total .arrow {
+
+    font-size: 22px;
+
+    color: #999;
+
+    transition: .2s;
+}
+
+.home-group-header.open .arrow {
+    transform: rotate(90deg);
+}
+
+.home-group-body {
+
+    display: none;
+
+    background: #fafafa;
+
+    border-top: 1px solid #eee;
+}
+
+.home-group-body.open {
+    display: block;
+}
+
+
+/* 홈 카드 안쪽 대분류 아이템 */
+
+.home-group-body .category-item {
+
+    border-bottom: 1px solid #eee;
+
+    background: white;
+}
+
+.home-group-body .category-item:last-child {
+    border-bottom: 0;
 }
 
 
 /* =========================
-   HOME
+   HOME (기존 카테고리 스타일)
 ========================= */
-
-.category-card {
-
-    background: white;
-
-    border-radius: 18px;
-
-    overflow: hidden;
-
-    box-shadow: 0 2px 10px rgba(0,0,0,.04);
-}
 
 .category-item {
     border-bottom: 1px solid #eee;
@@ -479,7 +531,6 @@ button {
     transform: rotate(90deg);
 }
 
-/* ⭐ 기본 접힘: open 클래스가 붙어야만 표시 */
 .subcategory-list {
 
     display: none;
