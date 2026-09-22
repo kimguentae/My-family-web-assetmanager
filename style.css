@@ -9,24 +9,18 @@
 
 html,
 body {
-
     margin: 0;
     padding: 0;
-
     width: 100%;
     min-height: 100%;
-
     background: #f5f6f8;
-
     color: #171717;
-
     font-family:
         -apple-system,
         BlinkMacSystemFont,
         "Apple SD Gothic Neo",
         "Noto Sans KR",
         sans-serif;
-
     touch-action: manipulation;
 }
 
@@ -35,10 +29,8 @@ body {
 }
 
 .app {
-
     width: 100%;
     max-width: 700px;
-
     margin: 0 auto;
 }
 
@@ -64,144 +56,85 @@ button {
 ========================= */
 
 .header {
-
     height: 76px;
-
     padding: 0 20px;
-
     display: flex;
-
     align-items: center;
     justify-content: space-between;
-
     background: white;
-
     border-bottom: 1px solid #eee;
-
     position: sticky;
     top: 0;
-
     z-index: 500;
 }
 
 .logo {
-
     font-size: 23px;
-
     font-weight: 800;
-
     letter-spacing: -0.5px;
 }
 
 .date-wrap {
-
     position: relative;
-
     display: flex;
-
     align-items: center;
 }
 
 .date-wrap span {
-
     display: block;
-
     font-size: 16px;
-
     font-weight: 700;
-
     padding: 9px 12px;
-
     border-radius: 10px;
-
     background: #f1f2f4;
 }
 
 #datePicker {
-
     position: absolute;
-
     inset: 0;
-
     width: 100%;
     height: 100%;
-
     opacity: 0;
-
     cursor: pointer;
 }
 
 
 /* =========================
-   날짜 불러오기 상태
+   LOAD STATUS
 ========================= */
 
 .load-status {
-
     display: inline-flex !important;
-
     width: 14px;
     height: 14px;
-
     padding: 0 !important;
-
     margin-left: 0;
     margin-right: 6px;
-
     border-radius: 50%;
-
     align-items: center;
     justify-content: center;
-
     vertical-align: middle;
-
     font-size: 9px !important;
-
     font-weight: 800;
-
     color: white;
-
     box-sizing: border-box;
-
     background: transparent !important;
 }
 
 .load-status.loading {
-
     border: 2px solid #d5d5d5;
-
     border-top-color: #333;
-
     animation: load-spin .7s linear infinite;
 }
 
-.load-status.success {
-    background: #27ae60 !important;
-    border: 0;
-}
-
-.load-status.success::after {
-    content: "✓";
-    font-size: 9px;
-    line-height: 1;
-}
-
-.load-status.error {
-    background: #e74c3c !important;
-    border: 0;
-}
-
-.load-status.error::after {
-    content: "!";
-    font-size: 9px;
-    line-height: 1;
-}
+.load-status.success { background: #27ae60 !important; border: 0; }
+.load-status.success::after { content: "✓"; font-size: 9px; line-height: 1; }
+.load-status.error { background: #e74c3c !important; border: 0; }
+.load-status.error::after { content: "!"; font-size: 9px; line-height: 1; }
 
 @keyframes load-spin {
-
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
-
 }
 
 
@@ -210,11 +143,8 @@ button {
 ========================= */
 
 .page {
-
     display: none;
-
     padding: 20px;
-
     padding-bottom: 30px;
 }
 
@@ -224,57 +154,36 @@ button {
 
 
 /* =========================
-   순자산 카드 스택
+   NET WORTH STACK
 ========================= */
 
 .net-worth-stack {
-
     display: flex;
-
     overflow-x: auto;
-
     scroll-snap-type: x mandatory;
-
     -webkit-overflow-scrolling: touch;
-
     gap: 0;
-
     margin-bottom: 12px;
-
     scrollbar-width: none;
-
     -ms-overflow-style: none;
 }
 
-.net-worth-stack::-webkit-scrollbar {
-    display: none;
-}
+.net-worth-stack::-webkit-scrollbar { display: none; }
 
 .net-worth-card {
-
     flex: 0 0 100%;
-
     scroll-snap-align: center;
-
     background: #171717;
-
     color: white;
-
     border-radius: 22px;
-
     padding: 25px 22px;
-
     box-sizing: border-box;
 }
 
 .net-worth-card.secondary-card {
-
     background: #171717;
-
     color: white;
-
     border: 0;
-
     box-shadow: none;
 }
 
@@ -287,20 +196,14 @@ button {
 }
 
 .small-title {
-
     font-size: 14px;
-
     opacity: .7;
-
     margin-bottom: 9px;
 }
 
 .net-worth {
-
     font-size: 32px;
-
     font-weight: 800;
-
     letter-spacing: -1px;
 }
 
@@ -308,102 +211,67 @@ button {
     font-size: 32px;
 }
 
-
 .stack-dots {
-
     display: flex;
-
     justify-content: center;
-
     gap: 6px;
-
     margin-bottom: 20px;
 }
 
 .stack-dots .dot {
-
     width: 6px;
     height: 6px;
-
     border-radius: 50%;
-
     background: #d0d0d0;
-
     transition: .2s;
-
     cursor: pointer;
 }
 
 .stack-dots .dot.active {
-
     background: #171717;
-
     width: 18px;
-
     border-radius: 3px;
 }
 
 
 /* =========================
-   HOME GROUP (자산/부채)
+   HOME GROUPS
 ========================= */
 
 .home-group {
-
     background: white;
-
     border-radius: 18px;
-
     margin-bottom: 14px;
-
     box-shadow: 0 2px 10px rgba(0,0,0,.04);
-
     overflow: hidden;
 }
 
 .home-group-header {
-
     min-height: 67px;
-
     padding: 0 17px;
-
     display: flex;
-
     align-items: center;
-
     justify-content: space-between;
-
     cursor: pointer;
-
     user-select: none;
 }
 
 .home-group-title {
-
     font-size: 19px;
-
     font-weight: 800;
 }
 
 .home-group-total {
-
     display: flex;
-
     align-items: center;
-
     gap: 8px;
-
     font-size: 15px;
-
     font-weight: 700;
 }
 
 .home-group-total .arrow {
-
     font-size: 22px;
-
     color: #999;
-
     transition: .2s;
 }
 
@@ -412,11 +280,8 @@ button {
 }
 
 .home-group-body {
-
     display: none;
-
     background: #fafafa;
-
     border-top: 1px solid #eee;
 }
 
@@ -424,13 +289,8 @@ button {
     display: block;
 }
 
-
-/* 홈 카드 안쪽 대분류 아이템 */
-
 .home-group-body .category-item {
-
     border-bottom: 1px solid #eee;
-
     background: white;
 }
 
@@ -440,7 +300,7 @@ button {
 
 
 /* =========================
-   HOME (기존 카테고리 스타일)
+   CATEGORY
 ========================= */
 
 .category-item {
@@ -452,78 +312,50 @@ button {
 }
 
 .category-header {
-
     min-height: 67px;
-
     padding: 0 17px;
-
     display: flex;
-
     align-items: center;
-
     justify-content: space-between;
-
     cursor: pointer;
-
     user-select: none;
 }
 
 .category-left {
-
     display: flex;
-
     align-items: center;
-
     gap: 12px;
-
     font-size: 16px;
-
     font-weight: 700;
 }
 
 .category-icon {
-
     width: 38px;
     height: 38px;
-
     border-radius: 12px;
-
     background: #f1f2f4;
-
     display: flex;
-
     align-items: center;
     justify-content: center;
-
     font-size: 18px;
 }
 
 .category-icon.debt {
-
     background: #f4eeee;
-
     color: #b33b3b;
 }
 
 .category-right {
-
     display: flex;
-
     align-items: center;
-
     gap: 10px;
-
     font-size: 15px;
-
     font-weight: 700;
 }
 
 .arrow {
-
     font-size: 23px;
-
     color: #999;
-
     transition: .2s;
 }
 
@@ -532,11 +364,8 @@ button {
 }
 
 .subcategory-list {
-
     display: none;
-
     background: #fafafa;
-
     padding: 0 17px 9px 67px;
 }
 
@@ -545,19 +374,12 @@ button {
 }
 
 .subcategory-row {
-
     min-height: 46px;
-
     display: flex;
-
     align-items: center;
-
     justify-content: space-between;
-
     border-bottom: 1px solid #eee;
-
     font-size: 14px;
-
     color: #555;
 }
 
@@ -571,82 +393,52 @@ button {
 ========================= */
 
 .input-tree-card {
-
     background: white;
-
     border-radius: 18px;
-
     overflow: hidden;
-
     margin-bottom: 14px;
-
     box-shadow: 0 2px 10px rgba(0,0,0,.04);
 }
 
 .input-section-header {
-
     min-height: 67px;
-
     padding: 0 17px;
-
     display: flex;
-
     align-items: center;
-
     justify-content: space-between;
-
     border-bottom: 1px solid #eee;
-
     cursor: pointer;
-
     user-select: none;
-
     background: white;
 }
 
 .input-section-left {
-
     display: flex;
-
     align-items: center;
-
     gap: 12px;
-
     font-size: 19px;
-
     font-weight: 800;
 }
 
 .input-section-icon {
-
     width: 38px;
     height: 38px;
-
     border-radius: 12px;
-
     background: #f1f2f4;
-
     display: flex;
-
     align-items: center;
     justify-content: center;
-
     font-size: 18px;
 }
 
 .input-section-icon.debt {
-
     background: #f4eeee;
-
     color: #b33b3b;
 }
 
 .input-section-arrow {
-
     font-size: 23px;
-
     color: #999;
-
     transition: .2s;
 }
 
@@ -655,9 +447,7 @@ button {
 }
 
 .input-section-list {
-
     display: none;
-
     background: #fafafa;
 }
 
@@ -665,51 +455,29 @@ button {
     display: block;
 }
 
-
-/* =========================
-   대분류
-========================= */
-
 .tree-header {
-
     min-height: 61px;
-
     padding: 0 17px;
-
     display: flex;
-
     align-items: center;
-
     justify-content: space-between;
-
     background: white;
-
     border-bottom: 1px solid #eee;
-
     cursor: pointer;
-
     user-select: none;
 }
 
 .tree-name {
-
     display: flex;
-
     align-items: center;
-
     gap: 9px;
-
     font-size: 17px;
-
     font-weight: 800;
 }
 
 .tree-arrow {
-
     color: #999;
-
     font-size: 20px;
-
     transition: .2s;
 }
 
@@ -718,18 +486,13 @@ button {
 }
 
 .tree-total {
-
     font-size: 14px;
-
     font-weight: 700;
-
     color: #444;
 }
 
 .middle-list {
-
     display: none;
-
     background: #fafafa;
 }
 
@@ -737,57 +500,34 @@ button {
     display: block;
 }
 
-
-/* =========================
-   중분류
-========================= */
-
 .middle-block {
     border-bottom: 1px solid #eee;
 }
 
 .middle-header {
-
     min-height: 54px;
-
     padding: 0 17px 0 31px;
-
     display: flex;
-
     align-items: center;
-
     justify-content: space-between;
-
     background: #fafafa;
-
     cursor: pointer;
-
     user-select: none;
 }
 
 .middle-name {
-
     display: flex;
-
     align-items: center;
-
     gap: 7px;
-
     font-size: 15px;
-
     font-weight: 700;
-
     min-width: 0;
 }
 
 .middle-arrow {
-
     color: #aaa;
-
     font-size: 19px;
-
     transition: .2s;
-
     flex: 0 0 auto;
 }
 
@@ -796,72 +536,43 @@ button {
 }
 
 .middle-total-wrap {
-
     display: flex;
-
     align-items: center;
-
     gap: 8px;
-
     min-width: 0;
 }
 
 .middle-money-input {
-
     width: 145px;
-
     height: 38px;
-
     display: flex;
-
     align-items: center;
-
     justify-content: flex-end;
-
     background: transparent;
-
     border: 0;
-
     padding: 0;
-
     flex: 0 0 145px;
 }
 
 .middle-money-input .currency-symbol {
-
     font-size: 13px;
-
     color: #555;
-
     font-weight: 700;
-
     margin-right: 3px;
-
     white-space: nowrap;
-
     order: 0;
 }
 
 .middle-money-input input {
-
     width: 110px;
-
     height: 38px;
-
     border: 0;
-
     outline: 0;
-
     background: transparent;
-
     padding: 0;
-
     text-align: right;
-
     font-size: 13px;
-
     font-weight: 700;
-
     color: #333;
 }
 
@@ -869,17 +580,9 @@ button {
     color: #aaa;
 }
 
-
-/* =========================
-   소분류
-========================= */
-
 .child-list {
-
     display: none;
-
     padding: 0 17px 6px 52px;
-
     background: #f8f8f8;
 }
 
@@ -888,17 +591,11 @@ button {
 }
 
 .input-row {
-
     min-height: 55px;
-
     display: flex;
-
     align-items: center;
-
     justify-content: space-between;
-
     gap: 8px;
-
     border-bottom: 1px solid #eee;
 }
 
@@ -907,71 +604,39 @@ button {
 }
 
 .input-label {
-
     flex: 1;
-
     font-size: 14px;
-
     color: #444;
-
     min-width: 0;
-
     overflow: hidden;
-
     text-overflow: ellipsis;
-
     white-space: nowrap;
 }
 
-
-/* =========================
-   금액 입력
-========================= */
-
 .money-input {
-
     width: 170px;
-
     height: 40px;
-
     display: flex;
-
     align-items: center;
-
     justify-content: flex-end;
-
     border: 0;
-
     border-radius: 10px;
-
     padding: 0;
-
     background: transparent;
-
     flex: 0 0 170px;
 }
 
 .money-input input {
-
     width: 135px;
-
     height: 40px;
-
     border: 0;
     outline: 0;
-
     background: transparent;
-
     text-align: right;
-
     font-size: 14px;
-
     font-weight: 700;
-
     min-width: 0;
-
     color: #333;
-
     padding: 0;
 }
 
@@ -980,41 +645,27 @@ button {
 }
 
 .money-input .currency-symbol {
-
     margin-left: 3px;
-
     font-size: 13px;
-
     color: #555;
-
     font-weight: 700;
-
     order: 2;
 }
 
 
 /* =========================
-   저장
+   SAVE
 ========================= */
 
 .save-btn {
-
     width: 100%;
-
     height: 55px;
-
     margin-top: 5px;
-
     border-radius: 14px;
-
     background: #171717;
-
     color: white;
-
     font-size: 17px;
-
     font-weight: 800;
-
     cursor: pointer;
 }
 
@@ -1023,13 +674,9 @@ button {
 }
 
 .save-status {
-
     text-align: center;
-
     margin-top: 12px;
-
     font-size: 13px;
-
     min-height: 20px;
 }
 
@@ -1039,36 +686,23 @@ button {
 ========================= */
 
 .empty-page {
-
     min-height: 500px;
-
     display: flex;
-
     flex-direction: column;
-
     align-items: center;
-
     justify-content: center;
-
     text-align: center;
 }
 
 .empty-icon {
-
     width: 70px;
     height: 70px;
-
     border-radius: 22px;
-
     background: white;
-
     display: flex;
-
     align-items: center;
     justify-content: center;
-
     font-size: 30px;
-
     margin-bottom: 18px;
 }
 
@@ -1077,72 +711,48 @@ button {
 }
 
 .empty-page p {
-
     color: #888;
-
     line-height: 1.6;
 }
 
 
 /* =========================
-   BOTTOM
+   BOTTOM NAV
 ========================= */
 
 .bottom-nav {
-
     position: fixed;
-
     left: 50%;
     bottom: 0;
-
     transform: translateX(-50%);
-
     width: 100%;
     max-width: 700px;
-
     height: 82px;
-
     background: rgba(255,255,255,.97);
-
     border-top: 1px solid #e8e8e8;
-
     display: grid;
-
     grid-template-columns: repeat(5, 1fr);
-
     z-index: 1000;
 }
 
 .nav-item {
-
     display: flex;
-
     flex-direction: column;
-
     align-items: center;
-
     justify-content: center;
-
     gap: 5px;
-
     color: #999;
-
     cursor: pointer;
-
     user-select: none;
 }
 
 .nav-item.active {
-
     color: #111;
-
     font-weight: 800;
 }
 
 .nav-icon {
-
     font-size: 23px;
-
     line-height: 1;
 }
 
@@ -1160,72 +770,46 @@ button {
 }
 
 .analysis-card {
-
     background: white;
-
     border-radius: 18px;
-
     padding: 18px 14px 14px;
-
     margin-bottom: 16px;
-
     box-shadow: 0 2px 10px rgba(0,0,0,.04);
-
     overflow: hidden;
 }
 
 .analysis-title {
-
     display: flex;
-
     align-items: center;
-
     justify-content: space-between;
-
     font-size: 18px;
-
     font-weight: 800;
-
     padding: 0 4px 12px;
 }
 
 .chart-container {
-
     position: relative;
-
     width: 100%;
-
     min-height: 250px;
-
     overflow: hidden;
-
     touch-action: pan-y;
 }
 
 .chart-container svg {
-
     display: block;
-
     width: 100%;
-
     height: 250px;
-
     overflow: visible;
 }
 
 .chart-grid-line {
-
     stroke: #eeeeee;
-
     stroke-width: 1;
 }
 
 .chart-axis-text {
-
     fill: #999;
-
     font-size: 10px;
-
     font-family:
         -apple-system, BlinkMacSystemFont,
         "Apple SD Gothic Neo", "Noto Sans KR",
@@ -1233,115 +817,64 @@ button {
 }
 
 .chart-line {
-
     fill: none;
-
     stroke-width: 2.8;
-
     stroke-linecap: round;
-
     stroke-linejoin: round;
 }
 
 .chart-point {
-
     stroke: white;
-
     stroke-width: 2;
-
     cursor: pointer;
 }
 
 .chart-point-hit {
-
     fill: transparent;
-
     cursor: pointer;
 }
 
 .chart-tooltip {
-
     position: absolute;
-
     display: none;
-
     z-index: 50;
-
     min-width: 135px;
-
     padding: 9px 11px;
-
     background: rgba(23,23,23,.95);
-
     color: white;
-
     border-radius: 10px;
-
     box-shadow: 0 5px 20px rgba(0,0,0,.2);
-
     pointer-events: none;
-
     font-size: 12px;
-
     line-height: 1.5;
-
     white-space: nowrap;
 }
 
-.chart-tooltip.show {
-    display: block;
-}
-
-.chart-tooltip-date {
-
-    color: #bbb;
-
-    margin-bottom: 2px;
-}
-
-.chart-tooltip-value {
-
-    font-size: 14px;
-
-    font-weight: 800;
-}
+.chart-tooltip.show { display: block; }
+.chart-tooltip-date { color: #bbb; margin-bottom: 2px; }
+.chart-tooltip-value { font-size: 14px; font-weight: 800; }
 
 .chart-legend {
-
     display: flex;
-
     align-items: center;
-
     gap: 16px;
-
     padding: 0 4px 10px;
-
     flex-wrap: wrap;
 }
 
 .legend-item {
-
     display: flex;
-
     align-items: center;
-
     gap: 6px;
-
     font-size: 12px;
-
     color: #666;
-
     font-weight: 600;
 }
 
 .legend-dot {
-
     width: 9px;
-
     height: 9px;
-
     border-radius: 50%;
-
     display: inline-block;
 }
 
@@ -1349,35 +882,375 @@ button {
 .debt-line { background: #eb5757; }
 .stock-line { background: #27ae60; }
 .coin-line { background: #9b51e0; }
+.realestate-line { background: #f2994a; }
+.cash-line { background: #56ccf2; }
+.etc-line { background: #bb6bd9; }
 
 .analysis-empty {
-
     min-height: 250px;
-
     display: flex;
-
     align-items: center;
-
     justify-content: center;
-
     color: #999;
-
     font-size: 14px;
-
     text-align: center;
 }
 
 
 /* =========================
-   INPUT SWIPE ROW (원형 버튼)
+   ANALYSIS - METRIC CARDS
+========================= */
+
+.metric-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+}
+
+.metric-card {
+    background: white;
+    border-radius: 16px;
+    padding: 14px 14px 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,.04);
+}
+
+.metric-label {
+    font-size: 12px;
+    color: #888;
+    margin-bottom: 6px;
+}
+
+.metric-value {
+    font-size: 19px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+}
+
+.metric-delta {
+    font-size: 11px;
+    font-weight: 700;
+    margin-top: 5px;
+}
+
+.metric-delta.up { color: #eb5757; }
+.metric-delta.down { color: #2f80ed; }
+.metric-delta.neutral { color: #999; }
+
+.metric-delta .delta-abs {
+    color: #999;
+    font-weight: 600;
+    margin-left: 4px;
+}
+
+
+/* =========================
+   ANALYSIS - SUMMARY
+========================= */
+
+.monthly-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 9px 4px;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 14px;
+}
+
+.summary-row:last-child { border-bottom: 0; }
+.summary-row .label { color: #666; font-weight: 600; }
+.summary-row .value { font-weight: 800; }
+.summary-row .value.up { color: #eb5757; }
+.summary-row .value.down { color: #2f80ed; }
+
+
+/* =========================
+   ANALYSIS - DONUT
+========================= */
+
+.donut-wrap {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 4px 4px 8px;
+}
+
+.donut-svg-wrap {
+    position: relative;
+    flex: 0 0 160px;
+    width: 160px;
+    height: 160px;
+}
+
+.donut-legend {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+}
+
+.donut-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+}
+
+.donut-legend-color {
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+    flex: 0 0 10px;
+}
+
+.donut-legend-name {
+    flex: 1;
+    color: #333;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.donut-legend-pct {
+    font-weight: 800;
+    color: #171717;
+}
+
+
+/* =========================
+   ANALYSIS - CONTRIBUTION
+========================= */
+
+.contrib-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 4px 4px 6px;
+}
+
+.contrib-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+}
+
+.contrib-name {
+    flex: 0 0 90px;
+    color: #555;
+    font-weight: 700;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.contrib-bar-wrap {
+    flex: 1;
+    position: relative;
+    height: 18px;
+    background: #f0f0f0;
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.contrib-bar-wrap.pos { background: #fdeaea; }
+.contrib-bar-wrap.neg { background: #eaf1fc; }
+
+.contrib-bar {
+    height: 100%;
+    border-radius: 5px;
+}
+
+.contrib-bar.pos { background: #eb5757; }
+.contrib-bar.neg { background: #2f80ed; }
+
+.contrib-value {
+    flex: 0 0 100px;
+    text-align: right;
+    font-weight: 800;
+}
+
+.contrib-value.pos { color: #eb5757; }
+.contrib-value.neg { color: #2f80ed; }
+.contrib-value.zero { color: #999; }
+
+
+/* =========================
+   ANALYSIS - GOAL
+========================= */
+
+.goal-item {
+    padding: 12px 4px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.goal-item:last-child { border-bottom: 0; }
+
+.goal-head {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    margin-bottom: 8px;
+}
+
+.goal-head .name { color: #555; font-weight: 700; }
+.goal-head .progress { color: #171717; font-weight: 800; }
+
+.goal-bar-bg {
+    width: 100%;
+    height: 10px;
+    background: #f0f0f0;
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.goal-bar {
+    height: 100%;
+    background: #27ae60;
+    border-radius: 5px;
+}
+
+.goal-foot {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: #888;
+    margin-top: 6px;
+}
+
+
+/* =========================
+   SETTINGS
+========================= */
+
+.settings-page {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.settings-card {
+    background: white;
+    border-radius: 18px;
+    padding: 18px 16px;
+    box-shadow: 0 2px 10px rgba(0,0,0,.04);
+}
+
+.settings-title {
+    font-size: 17px;
+    font-weight: 800;
+    margin-bottom: 6px;
+}
+
+.settings-desc {
+    font-size: 12px;
+    color: #888;
+    margin-bottom: 14px;
+    line-height: 1.5;
+}
+
+.settings-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 4px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.settings-row:last-child { border-bottom: 0; }
+
+.settings-row-name {
+    flex: 1;
+    font-size: 14px;
+    font-weight: 700;
+    color: #333;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.settings-row-order {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.settings-order-btn {
+    width: 26px;
+    height: 20px;
+    border-radius: 6px;
+    background: #f1f2f4;
+    color: #333;
+    font-size: 11px;
+    font-weight: 800;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.settings-order-btn:disabled {
+    opacity: .3;
+    cursor: default;
+}
+
+/* Toggle */
+
+.toggle {
+    position: relative;
+    width: 46px;
+    height: 26px;
+    background: #d5d5d5;
+    border-radius: 13px;
+    cursor: pointer;
+    transition: .2s;
+    flex: 0 0 46px;
+}
+
+.toggle.on { background: #27ae60; }
+
+.toggle::after {
+    content: "";
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 20px;
+    height: 20px;
+    background: white;
+    border-radius: 50%;
+    transition: .2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,.2);
+}
+
+.toggle.on::after { left: 23px; }
+
+
+.danger-btn {
+    width: 100%;
+    height: 46px;
+    border-radius: 12px;
+    background: #fdeaea;
+    color: #eb5757;
+    font-size: 14px;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+
+/* =========================
+   SWIPE
 ========================= */
 
 .swipe-row {
-
     position: relative;
-
     overflow: hidden;
-
     background: #fafafa;
 }
 
@@ -1387,15 +1260,10 @@ button {
 }
 
 .swipe-content {
-
     position: relative;
-
     z-index: 2;
-
     background: inherit;
-
     will-change: transform;
-
     touch-action: pan-y;
 }
 
@@ -1404,26 +1272,16 @@ button {
 }
 
 .swipe-actions {
-
     position: absolute;
-
     top: 0;
     right: 0;
-
     height: 100%;
-
     display: flex;
-
     align-items: center;
-
     justify-content: flex-end;
-
     gap: 8px;
-
     padding-right: 12px;
-
     z-index: 1;
-
     background: linear-gradient(
         to right,
         rgba(250,250,250,0) 0%,
@@ -1444,48 +1302,26 @@ button {
 }
 
 .swipe-action-btn {
-
     width: 44px;
     height: 44px;
-
     min-width: 44px;
-
     border-radius: 50%;
-
     border: 0;
-
     color: white;
-
     font-size: 12px;
-
     font-weight: 700;
-
     cursor: pointer;
-
     display: flex;
-
     align-items: center;
-
     justify-content: center;
-
     padding: 0;
-
     line-height: 1;
-
     box-shadow: 0 2px 6px rgba(0,0,0,.15);
 }
 
-.swipe-action-btn.edit {
-    background: #2f80ed;
-}
-
-.swipe-action-btn.add {
-    background: #27ae60;
-}
-
-.swipe-action-btn.delete {
-    background: #eb5757;
-}
+.swipe-action-btn.edit { background: #2f80ed; }
+.swipe-action-btn.add { background: #27ae60; }
+.swipe-action-btn.delete { background: #eb5757; }
 
 
 /* =========================
@@ -1494,48 +1330,23 @@ button {
 
 @media(max-width:480px) {
 
-    .page {
-        padding: 16px;
-    }
+    .page { padding: 16px; }
+    .header { padding: 0 16px; }
+    .logo { font-size: 21px; }
+    .date-wrap span { font-size: 14px; }
 
-    .header {
-        padding: 0 16px;
-    }
+    .money-input { width: 145px; flex-basis: 145px; }
+    .money-input input { width: 110px; }
 
-    .logo {
-        font-size: 21px;
-    }
+    .middle-money-input { width: 130px; flex-basis: 130px; }
+    .middle-money-input input { width: 95px; }
 
-    .date-wrap span {
-        font-size: 14px;
-    }
-
-    .money-input {
-        width: 145px;
-        flex-basis: 145px;
-    }
-
-    .money-input input {
-        width: 110px;
-    }
-
-    .middle-money-input {
-        width: 130px;
-        flex-basis: 130px;
-    }
-
-    .middle-money-input input {
-        width: 95px;
-    }
-
-    .analysis-card {
-        padding: 16px 10px 10px;
-    }
-
+    .analysis-card { padding: 16px 10px 10px; }
     .chart-container,
-    .chart-container svg {
-        min-height: 230px;
-        height: 230px;
-    }
+    .chart-container svg { min-height: 230px; height: 230px; }
 
+    .donut-wrap { flex-direction: column; gap: 12px; }
+    .donut-svg-wrap { width: 160px; height: 160px; }
+
+    .metric-value { font-size: 17px; }
 }

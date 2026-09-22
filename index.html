@@ -93,10 +93,6 @@
 
 
 
-    <!-- =========================
-         자산 그룹 (탭하면 열림)
-    ========================== -->
-
     <div class="home-group" id="homeAssetGroup">
 
         <div class="home-group-header" data-group="asset">
@@ -122,10 +118,6 @@
     </div>
 
 
-
-    <!-- =========================
-         부채 그룹 (탭하면 열림)
-    ========================== -->
 
     <div class="home-group" id="homeDebtGroup">
 
@@ -181,73 +173,7 @@
 
 <main id="analysisPage" class="page">
 
-    <div class="analysis-page">
-
-
-        <section class="analysis-card">
-
-            <div class="analysis-title">
-                <div>순자산 추이</div>
-            </div>
-
-            <div class="chart-container" id="netWorthChart"></div>
-
-        </section>
-
-
-
-        <section class="analysis-card">
-
-            <div class="analysis-title">
-                <div>자산 · 부채 추이</div>
-            </div>
-
-            <div class="chart-legend">
-
-                <div class="legend-item">
-                    <span class="legend-dot asset-line"></span>
-                    <span>자산(부동산 제외)</span>
-                </div>
-
-                <div class="legend-item">
-                    <span class="legend-dot debt-line"></span>
-                    <span>부채</span>
-                </div>
-
-            </div>
-
-            <div class="chart-container" id="assetDebtChart"></div>
-
-        </section>
-
-
-
-        <section class="analysis-card">
-
-            <div class="analysis-title">
-                <div>투자자산 변동</div>
-            </div>
-
-            <div class="chart-legend">
-
-                <div class="legend-item">
-                    <span class="legend-dot stock-line"></span>
-                    <span>주식</span>
-                </div>
-
-                <div class="legend-item">
-                    <span class="legend-dot coin-line"></span>
-                    <span>비트코인</span>
-                </div>
-
-            </div>
-
-            <div class="chart-container" id="investmentChart"></div>
-
-        </section>
-
-
-    </div>
+    <div class="analysis-page" id="analysisContainer"></div>
 
 </main>
 
@@ -282,13 +208,43 @@
 
 <main id="settingsPage" class="page">
 
-    <div class="empty-page">
+    <div class="settings-page">
 
-        <div class="empty-icon">⚙</div>
+        <section class="settings-card">
 
-        <h2>설정</h2>
+            <div class="settings-title">
+                분석 화면 설정
+            </div>
 
-        <p>MY ASSET 설정</p>
+            <div class="settings-desc">
+                항목을 켜고 끄거나 순서를 변경할 수 있습니다.
+                위/아래 버튼으로 순서를 조정하세요.
+            </div>
+
+            <div id="analysisSettingsList"></div>
+
+        </section>
+
+
+        <section class="settings-card">
+
+            <div class="settings-title">
+                데이터 초기화
+            </div>
+
+            <div class="settings-desc">
+                로컬에 저장된 트리/입력값을 초기화합니다.
+            </div>
+
+            <button
+                type="button"
+                class="danger-btn"
+                id="resetLocalButton"
+            >
+                로컬 데이터 초기화
+            </button>
+
+        </section>
 
     </div>
 
