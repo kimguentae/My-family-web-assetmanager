@@ -1887,3 +1887,17 @@ button {
         row-gap: 10px;
     }
 }
+
+/* =========================
+   CLICKABLE METRIC CARD
+========================= */
+
+.metric-card.clickable-metric {
+    cursor: pointer;
+    transition: transform .12s ease, box-shadow .12s ease;
+}
+
+.metric-card.clickable-metric:active {
+    transform: scale(.97);
+    box-shadow: 0 4px 14px rgba(47,128,237,.18);
+}

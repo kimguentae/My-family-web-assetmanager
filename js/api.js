@@ -2432,7 +2432,7 @@ function createMetricCards() {
         { label: "부동산 제외 순자산", key: "assetExcludingRealEstate", invert: false },
         { label: "총자산",            key: "asset",                   invert: false },
         { label: "총부채",            key: "debt",                    invert: true  },
-        { label: "투자자산",          key: "investment",              invert: false },
+        { label: "투자자산",          key: "investment",              invert: false, link: "investment" },
         { label: "현금성자산",        key: "cash",                    invert: false }
     ];
 
@@ -2471,6 +2471,14 @@ function createMetricCards() {
             <div class="metric-value">₩${formatNumber(value)}</div>
             ${deltaHTML}
         `;
+
+        // 클릭 시 이동 (투자자산만)
+        if (item.link === "investment") {
+            el.classList.add("clickable-metric");
+            el.addEventListener("click", function () {
+                gotoInvestmentPage();
+            });
+        }
 
         grid.appendChild(el);
     });
