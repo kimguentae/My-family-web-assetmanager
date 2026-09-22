@@ -8,8 +8,7 @@
 ================================================== */
 
 const SUPABASE_URL = "https://ozejxesdcuyypkrxamnd.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im96ZWp4ZXNkY3V5eXBrcnhhbW5kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk1NjE3MjksImV4cCI6MjEwNTEzNzcyOX0.Fcxd4ScWmJn7ZmfSmFyrNOX0MvXoZBSDn52uLV8R3GQ";
-
+const SUPABASE_ANON_KEY = "여기에_본인_ANON_KEY_입력";
 
 const supabaseClient = window.supabase.createClient(
     SUPABASE_URL,
@@ -96,11 +95,9 @@ const DEFAULT_TREE = [
 
 const ANALYSIS_SECTIONS = [
     { id: "metricCards",      name: "핵심 지표 카드",           defaultOn: true },
-    { id: "netWorthChart",    name: "순자산 추이",              defaultOn: true },
-    { id: "assetDebtChart",   name: "자산 · 부채 추이",         defaultOn: true },
+    { id: "netWorthChart",    name: "순자산 · 자산 · 부채 추이", defaultOn: true },
     { id: "donutAsset",       name: "자산 구성 도넛",           defaultOn: true },
-    { id: "debtRepayChart",   name: "부채 상환 추이",           defaultOn: true },
-    { id: "monthlyIncrease",  name: "월별 순자산 증가액",       defaultOn: true },
+    { id: "candleChart",      name: "순자산 캔들",              defaultOn: true },
     { id: "investmentChart",  name: "투자자산 변동",            defaultOn: true },
     { id: "contribution",     name: "자산 증가 기여도",         defaultOn: true },
     { id: "allocation",       name: "자산배분 비중 추이",       defaultOn: true },
@@ -124,6 +121,8 @@ let analysisHistory = [];
 let analysisLoaded = false;
 
 let goals = loadGoals();
+
+let longPressTarget = null;
 
 
 /* ==================================================
@@ -149,6 +148,8 @@ document.addEventListener("DOMContentLoaded", async function () {
     initGlobalSwipeReset();
 
     initSettings();
+
+    initContextMenu();
 
     renderInput();
 
@@ -230,6 +231,7 @@ function initNavigation() {
                 title.textContent =
                     page === "input" ? "자산입력"
                     : page === "settings" ? "설정"
+                    : page === "detail" ? "투자자산"
                     : "MY ASSET";
             }
 
@@ -336,7 +338,6 @@ async function saveAll() {
     try {
         const values = collectValues();
 
-        // 로컬 fallback
         localStorage.setItem(
             "myAssetValues_" + selectedDate,
             JSON.stringify(values)
@@ -606,6 +607,8 @@ function createRootElement(root) {
         middleList.classList.toggle("open");
     });
 
+    attachLongPress(header, { kind: "root", id: root.id });
+
     (root.children || []).forEach(middle => {
         middleList.appendChild(createMiddleElement(middle));
     });
@@ -677,6 +680,8 @@ function createMiddleElement(middle) {
         childList.classList.toggle("open");
     });
 
+    attachLongPress(header, { kind: "middle", id: middle.id });
+
     const middleInput = header.querySelector("#middle_value_" + middle.id);
 
     if (directValue !== null) {
@@ -733,6 +738,8 @@ function createChildElement(child) {
     swiper.appendChild(row);
 
     attachSwipe(swiper, row, actions);
+
+    attachLongPress(row, { kind: "child", id: child.id });
 
     const input = row.querySelector("input");
     const saved = getLocalValues();
@@ -881,6 +888,261 @@ function attachSwipe(wrapper, content, actions) {
 
 
 /* ==================================================
+   LONG PRESS → CONTEXT MENU
+================================================== */
+
+let longPressTimer = null;
+let longPressStarted = false;
+
+function attachLongPress(element, target) {
+    let moved = false;
+
+    const start = function (e) {
+        if (e.target.closest("input")) return;
+
+        moved = false;
+        longPressStarted = true;
+        longPressTarget = target;
+
+        clearTimeout(longPressTimer);
+
+        longPressTimer = setTimeout(function () {
+            if (!moved) {
+                showContextMenu(target, e);
+            }
+        }, 550);
+    };
+
+    const move = function () {
+        moved = true;
+        clearTimeout(longPressTimer);
+    };
+
+    const end = function () {
+        clearTimeout(longPressTimer);
+        longPressStarted = false;
+    };
+
+    element.addEventListener("pointerdown", start);
+    element.addEventListener("pointermove", move);
+    element.addEventListener("pointerup", end);
+    element.addEventListener("pointercancel", end);
+}
+
+
+function initContextMenu() {
+    const menu = document.getElementById("contextMenu");
+    if (!menu) return;
+
+    menu.querySelectorAll("button").forEach(button => {
+        button.addEventListener("click", function (e) {
+            e.stopPropagation();
+            const action = this.dataset.action;
+            handleContextAction(action, longPressTarget);
+            hideContextMenu();
+        });
+    });
+
+    document.addEventListener("pointerdown", function (e) {
+        if (!menu.contains(e.target)) {
+            hideContextMenu();
+        }
+    });
+}
+
+
+function showContextMenu(target, event) {
+    const menu = document.getElementById("contextMenu");
+    if (!menu) return;
+
+    longPressTarget = target;
+
+    // 액션 버튼 표시/숨김
+    const editBtn = menu.querySelector('[data-action="edit"]');
+    const addBtn = menu.querySelector('[data-action="add"]');
+    const delBtn = menu.querySelector('[data-action="delete"]');
+
+    if (target.kind === "root") {
+        editBtn.style.display = "";
+        addBtn.style.display = "";
+        delBtn.style.display = "";
+    } else if (target.kind === "middle") {
+        editBtn.style.display = "";
+        addBtn.style.display = "";
+        delBtn.style.display = "";
+    } else if (target.kind === "child") {
+        editBtn.style.display = "";
+        addBtn.style.display = "none";
+        delBtn.style.display = "";
+    }
+
+    menu.classList.add("show");
+
+    menu.style.left = "-9999px";
+    menu.style.top = "-9999px";
+
+    requestAnimationFrame(function () {
+        const rect = menu.getBoundingClientRect();
+        let x = event.clientX - rect.width / 2;
+        let y = event.clientY - rect.height - 10;
+        const margin = 10;
+
+        if (x < margin) x = margin;
+        if (x + rect.width + margin > window.innerWidth) {
+            x = window.innerWidth - rect.width - margin;
+        }
+        if (y < margin) y = event.clientY + 15;
+
+        menu.style.left = x + "px";
+        menu.style.top = y + "px";
+    });
+}
+
+
+function hideContextMenu() {
+    const menu = document.getElementById("contextMenu");
+    if (!menu) return;
+    menu.classList.remove("show");
+    longPressTarget = null;
+}
+
+
+function handleContextAction(action, target) {
+    if (!target) return;
+
+    if (target.kind === "root") {
+        if (action === "edit") editRoot(target.id);
+        if (action === "add") addMiddle(target.id);
+        if (action === "delete") deleteRoot(target.id);
+    }
+
+    if (target.kind === "middle") {
+        if (action === "edit") editMiddle(target.id);
+        if (action === "add") addChild(target.id);
+        if (action === "delete") deleteMiddle(target.id);
+    }
+
+    if (target.kind === "child") {
+        if (action === "edit") editChild(target.id);
+        if (action === "delete") deleteChild(target.id);
+    }
+}
+
+
+/* ==================================================
+   CUSTOM MODAL
+================================================== */
+
+let modalResolve = null;
+
+function openModal(options) {
+    return new Promise(function (resolve) {
+        const backdrop = document.getElementById("modalBackdrop");
+        const sheet = document.getElementById("modalSheet");
+        const titleEl = document.getElementById("modalTitle");
+        const descEl = document.getElementById("modalDesc");
+        const inputEl = document.getElementById("modalInput");
+        const actionsEl = document.getElementById("modalActions");
+        const cancelBtn = document.getElementById("modalCancel");
+        const confirmBtn = document.getElementById("modalConfirm");
+
+        if (!backdrop) {
+            resolve(null);
+            return;
+        }
+
+        titleEl.textContent = options.title || "";
+        descEl.textContent = options.desc || "";
+        descEl.style.display = options.desc ? "" : "none";
+
+        if (options.type === "prompt") {
+            inputEl.style.display = "";
+            inputEl.value = options.value || "";
+            inputEl.placeholder = options.placeholder || "";
+            setTimeout(() => { inputEl.focus(); inputEl.select(); }, 100);
+        } else {
+            inputEl.style.display = "none";
+        }
+
+        cancelBtn.style.display = options.hideCancel ? "none" : "";
+        confirmBtn.textContent = options.confirmText || "확인";
+        confirmBtn.classList.toggle("danger", options.danger === true);
+
+        backdrop.classList.add("show");
+
+        function cleanup() {
+            backdrop.classList.remove("show");
+            cancelBtn.removeEventListener("click", onCancel);
+            confirmBtn.removeEventListener("click", onConfirm);
+            inputEl.removeEventListener("keydown", onKey);
+            modalResolve = null;
+        }
+
+        function onCancel() {
+            cleanup();
+            resolve(null);
+        }
+
+        function onConfirm() {
+            const value =
+                options.type === "prompt"
+                    ? inputEl.value.trim()
+                    : true;
+            cleanup();
+            resolve(value);
+        }
+
+        function onKey(e) {
+            if (e.key === "Enter") { e.preventDefault(); onConfirm(); }
+            if (e.key === "Escape") { e.preventDefault(); onCancel(); }
+        }
+
+        cancelBtn.addEventListener("click", onCancel);
+        confirmBtn.addEventListener("click", onConfirm);
+        inputEl.addEventListener("keydown", onKey);
+
+        modalResolve = resolve;
+    });
+}
+
+
+async function modalPrompt(title, defaultValue, options) {
+    options = options || {};
+    return await openModal({
+        title: title,
+        desc: options.desc || "",
+        type: "prompt",
+        value: defaultValue || "",
+        placeholder: options.placeholder || "",
+        confirmText: options.confirmText || "확인"
+    });
+}
+
+
+async function modalConfirm(title, desc, options) {
+    options = options || {};
+    return await openModal({
+        title: title,
+        desc: desc || "",
+        type: "confirm",
+        confirmText: options.confirmText || "확인",
+        danger: options.danger === true
+    });
+}
+
+
+async function modalAlert(title, desc) {
+    return await openModal({
+        title: title,
+        desc: desc || "",
+        type: "confirm",
+        confirmText: "확인",
+        hideCancel: true
+    });
+}
+
+
+/* ==================================================
    금액 입력
 ================================================== */
 
@@ -1025,13 +1287,13 @@ function setLoadStatus(status) {
    CRUD
 ================================================== */
 
-function addRoot(type) {
-    const name = prompt("추가할 대분류 이름");
-    if (!name || !name.trim()) return;
+async function addRoot(type) {
+    const name = await modalPrompt("대분류 추가", "", { placeholder: "이름 입력" });
+    if (!name) return;
 
     tree.push({
         id: makeId(),
-        name: name.trim(),
+        name: name,
         type: type,
         children: []
     });
@@ -1042,17 +1304,20 @@ function addRoot(type) {
 }
 
 
-function addMiddle(rootId) {
+async function addMiddle(rootId) {
     const root = findRoot(rootId);
     if (!root) return;
 
-    const name = prompt(`"${root.name}" 아래에 추가할 중분류`);
-    if (!name || !name.trim()) return;
+    const name = await modalPrompt("중분류 추가", "", {
+        desc: `"${root.name}" 아래에 추가`,
+        placeholder: "이름 입력"
+    });
+    if (!name) return;
 
     root.children = root.children || [];
     root.children.push({
         id: makeId(),
-        name: name.trim(),
+        name: name,
         children: []
     });
 
@@ -1062,17 +1327,20 @@ function addMiddle(rootId) {
 }
 
 
-function addChild(middleId) {
+async function addChild(middleId) {
     const middle = findMiddle(middleId);
     if (!middle) return;
 
-    const name = prompt(`"${middle.name}" 아래에 추가할 소분류`);
-    if (!name || !name.trim()) return;
+    const name = await modalPrompt("소분류 추가", "", {
+        desc: `"${middle.name}" 아래에 추가`,
+        placeholder: "이름 입력"
+    });
+    if (!name) return;
 
     middle.children = middle.children || [];
     middle.children.push({
         id: makeId(),
-        name: name.trim(),
+        name: name,
         children: []
     });
 
@@ -1082,43 +1350,87 @@ function addChild(middleId) {
 }
 
 
-function editMiddle(id) {
-    const middle = findMiddle(id);
-    if (!middle) return;
+async function editRoot(id) {
+    const root = findRoot(id);
+    if (!root) return;
 
-    const name = prompt("중분류 이름 수정", middle.name);
-    if (!name || !name.trim()) return;
+    const name = await modalPrompt("대분류 이름 수정", root.name);
+    if (!name) return;
 
-    middle.name = name.trim();
+    root.name = name;
     saveTree();
     renderInput();
     updateHome();
 }
 
 
-function editChild(id) {
+async function editMiddle(id) {
+    const middle = findMiddle(id);
+    if (!middle) return;
+
+    const name = await modalPrompt("중분류 이름 수정", middle.name);
+    if (!name) return;
+
+    middle.name = name;
+    saveTree();
+    renderInput();
+    updateHome();
+}
+
+
+async function editChild(id) {
     const result = findChild(id);
     if (!result) return;
 
     const child = result.child;
-    const name = prompt("소분류 이름 수정", child.name);
-    if (!name || !name.trim()) return;
+    const name = await modalPrompt("소분류 이름 수정", child.name);
+    if (!name) return;
 
-    child.name = name.trim();
+    child.name = name;
     saveTree();
     renderInput();
     updateHome();
 }
 
 
-function deleteMiddle(id) {
+async function deleteRoot(id) {
+    const root = findRoot(id);
+    if (!root) return;
+
+    const ids = getAllIdsFromRoot(root);
+    const values = getLocalValues();
+    const hasValue = ids.some(i => Number(values[i] || 0) !== 0);
+
+    let desc = "삭제하면 되돌릴 수 없습니다.";
+    if (hasValue) desc += " 입력된 금액도 함께 사라집니다.";
+
+    const ok = await modalConfirm(`"${root.name}" 삭제`, desc, {
+        confirmText: "삭제",
+        danger: true
+    });
+    if (!ok) return;
+
+    tree = tree.filter(item => item.id !== id);
+    removeValues(ids);
+
+    saveTree();
+    renderInput();
+    updateHome();
+}
+
+
+async function deleteMiddle(id) {
     const result = findMiddleWithRoot(id);
     if (!result) return;
 
     const middle = result.middle;
     const ids = [middle.id, ...(middle.children || []).map(child => child.id)];
 
-    if (!confirm(`"${middle.name}"을 삭제할까요?`)) return;
+    const ok = await modalConfirm(`"${middle.name}" 삭제`, "삭제하면 되돌릴 수 없습니다.", {
+        confirmText: "삭제",
+        danger: true
+    });
+    if (!ok) return;
 
     result.root.children =
         (result.root.children || []).filter(item => item.id !== id);
@@ -1130,11 +1442,15 @@ function deleteMiddle(id) {
 }
 
 
-function deleteChild(id) {
+async function deleteChild(id) {
     const result = findChild(id);
     if (!result) return;
 
-    if (!confirm(`"${result.child.name}"을 삭제할까요?`)) return;
+    const ok = await modalConfirm(`"${result.child.name}" 삭제`, "삭제하면 되돌릴 수 없습니다.", {
+        confirmText: "삭제",
+        danger: true
+    });
+    if (!ok) return;
 
     result.middle.children =
         (result.middle.children || []).filter(child => child.id !== id);
@@ -1143,6 +1459,18 @@ function deleteChild(id) {
     saveTree();
     renderInput();
     updateHome();
+}
+
+
+function getAllIdsFromRoot(root) {
+    const ids = [root.id];
+    (root.children || []).forEach(middle => {
+        ids.push(middle.id);
+        (middle.children || []).forEach(child => {
+            ids.push(child.id);
+        });
+    });
+    return ids;
 }
 
 
@@ -1223,7 +1551,7 @@ function updateHome() {
     });
 
     const netWorthExcludingRealEstate =
-        assetTotal - realEstateTotal - debtTotal;
+        (assetTotal - debtTotal) - realEstateTotal;
 
     const assetElement = document.getElementById("assetTotal");
     const debtElement = document.getElementById("debtTotal");
@@ -1558,8 +1886,13 @@ function saveGoals() {
 function initSettings() {
     const resetBtn = document.getElementById("resetLocalButton");
     if (resetBtn) {
-        resetBtn.addEventListener("click", function () {
-            if (!confirm("로컬 데이터를 초기화할까요?\n(트리, 입력값, 분석설정, 목표)")) return;
+        resetBtn.addEventListener("click", async function () {
+            const ok = await modalConfirm(
+                "로컬 데이터 초기화",
+                "트리, 입력값, 분석설정, 목표가 모두 삭제됩니다. 계속할까요?",
+                { confirmText: "초기화", danger: true }
+            );
+            if (!ok) return;
 
             localStorage.removeItem("myAssetTree");
             localStorage.removeItem("myAssetAnalysisConfig");
@@ -1772,34 +2105,25 @@ async function renderAnalysis() {
                     break;
 
                 case "netWorthChart":
-                    container.appendChild(createChartCard("순자산 추이", "netWorthChart"));
-                    setTimeout(() => drawNetWorthChart(), 0);
-                    break;
-
-                case "assetDebtChart":
                     container.appendChild(createChartCardWithLegend(
-                        "자산 · 부채 추이",
-                        "assetDebtChart",
+                        "순자산 · 자산 · 부채 추이",
+                        "netWorthChart",
                         [
+                            { cls: "net-line",   label: "순자산" },
                             { cls: "asset-line", label: "자산(부동산 제외)" },
                             { cls: "debt-line",  label: "부채" }
                         ]
                     ));
-                    setTimeout(() => drawAssetDebtChart(), 0);
+                    setTimeout(() => drawNetWorthChart(), 0);
                     break;
 
                 case "donutAsset":
                     container.appendChild(createDonutCard());
                     break;
 
-                case "debtRepayChart":
-                    container.appendChild(createChartCard("부채 상환 추이", "debtRepayChart"));
-                    setTimeout(() => drawDebtRepayChart(), 0);
-                    break;
-
-                case "monthlyIncrease":
-                    container.appendChild(createChartCard("월별 순자산 증가액", "monthlyIncreaseChart"));
-                    setTimeout(() => drawMonthlyIncreaseChart(), 0);
+                case "candleChart":
+                    container.appendChild(createChartCard("순자산 캔들", "candleChart"));
+                    setTimeout(() => drawCandleChart(), 0);
                     break;
 
                 case "investmentChart":
@@ -2014,6 +2338,7 @@ function createMetricCards() {
                 const sign = diff > 0 ? "+" : "−";
                 const abs = Math.abs(diff);
 
+                // 요청: + 는 빨강, − 는 파랑 (부채는 반대)
                 let cls;
                 if (item.invert) cls = diff > 0 ? "down" : "up";
                 else cls = diff > 0 ? "up" : "down";
@@ -2041,7 +2366,7 @@ function createMetricCards() {
 
 
 /* ==================================================
-   Donut
+   Donut (조각 위 텍스트 + 클릭 확대)
 ================================================== */
 
 function createDonutCard() {
@@ -2072,18 +2397,19 @@ function createDonutCard() {
     svgWrap.className = "donut-svg-wrap";
 
     if (total > 0) {
-        svgWrap.appendChild(createDonutSVG(data, total, 160));
+        svgWrap.appendChild(createDonutSVG(data, total, 200));
     } else {
-        svgWrap.innerHTML = `<div class="analysis-empty" style="min-height:160px;">데이터 없음</div>`;
+        svgWrap.innerHTML = `<div class="analysis-empty" style="min-height:200px;">데이터 없음</div>`;
     }
 
     const legend = document.createElement("div");
     legend.className = "donut-legend";
 
-    data.forEach(d => {
+    data.forEach((d, i) => {
         const pct = total > 0 ? (d.value / total * 100) : 0;
         const item = document.createElement("div");
         item.className = "donut-legend-item";
+        item.dataset.index = i;
         item.innerHTML = `
             <span class="donut-legend-color" style="background:${d.color};"></span>
             <span class="donut-legend-name">${escapeHtml(d.name)}</span>
@@ -2091,6 +2417,39 @@ function createDonutCard() {
         `;
         legend.appendChild(item);
     });
+
+    // 클릭 시 확대/강조
+    function highlightSlice(index) {
+        const svg = svgWrap.querySelector("svg");
+        if (!svg) return;
+
+        svg.querySelectorAll(".donut-slice").forEach((path, i) => {
+            const isActive = (i === index);
+            path.classList.toggle("active", isActive);
+        });
+
+        legend.querySelectorAll(".donut-legend-item").forEach((el, i) => {
+            el.classList.toggle("active", i === index);
+        });
+    }
+
+    // 도넛 조각 클릭
+    setTimeout(() => {
+        const svg = svgWrap.querySelector("svg");
+        if (svg) {
+            svg.querySelectorAll(".donut-slice").forEach((path, i) => {
+                path.addEventListener("click", function () {
+                    highlightSlice(i);
+                });
+            });
+        }
+
+        legend.querySelectorAll(".donut-legend-item").forEach((el, i) => {
+            el.addEventListener("click", function () {
+                highlightSlice(i);
+            });
+        });
+    }, 0);
 
     wrap.appendChild(svgWrap);
     wrap.appendChild(legend);
@@ -2110,14 +2469,16 @@ function createDonutSVG(data, total, size) {
     svg.setAttribute("height", size);
 
     const cx = size / 2, cy = size / 2;
-    const r = size / 2 - 10;
-    const strokeW = 22;
+    const r = size / 2 - 30;
+    const strokeW = 30;
 
     let startAngle = -Math.PI / 2;
 
-    data.forEach(d => {
+    data.forEach((d, idx) => {
         const angle = (d.value / total) * Math.PI * 2;
         const endAngle = startAngle + angle;
+        const midAngle = startAngle + angle / 2;
+        const pct = (d.value / total * 100);
 
         const x1 = cx + r * Math.cos(startAngle);
         const y1 = cy + r * Math.sin(startAngle);
@@ -2134,8 +2495,37 @@ function createDonutSVG(data, total, size) {
         path.setAttribute("fill", "none");
         path.setAttribute("stroke", d.color);
         path.setAttribute("stroke-width", strokeW);
+        path.setAttribute("class", "donut-slice");
+        path.dataset.index = idx;
+        path.style.transformOrigin = `${cx}px ${cy}px`;
+        path.style.transition = "transform .25s ease, opacity .25s ease";
+        path.style.cursor = "pointer";
 
         svg.appendChild(path);
+
+        // 조각 위 텍스트 (10% 이상만)
+        if (pct >= 8) {
+            const tr = r;
+            const tx = cx + tr * Math.cos(midAngle);
+            const ty = cy + tr * Math.sin(midAngle);
+
+            const label = document.createElementNS(ns, "text");
+            label.setAttribute("x", tx);
+            label.setAttribute("y", ty - 4);
+            label.setAttribute("text-anchor", "middle");
+            label.setAttribute("class", "donut-slice-text");
+            label.textContent = d.name;
+
+            const pctText = document.createElementNS(ns, "text");
+            pctText.setAttribute("x", tx);
+            pctText.setAttribute("y", ty + 9);
+            pctText.setAttribute("text-anchor", "middle");
+            pctText.setAttribute("class", "donut-slice-pct");
+            pctText.textContent = pct.toFixed(1) + "%";
+
+            svg.appendChild(label);
+            svg.appendChild(pctText);
+        }
 
         startAngle = endAngle;
     });
@@ -2369,21 +2759,17 @@ function findRecordOffset(baseDate, type) {
 ================================================== */
 
 function drawNetWorthChart() {
-    const series = getAnalysisSeries(["netWorth"]);
+    const series = getAnalysisSeries([
+        "netWorth",
+        "assetExcludingRealEstate",
+        "debt"
+    ]);
     createLineChart({
         containerId: "netWorthChart",
-        series: [{ key: "netWorth", name: "순자산", color: "#171717" }],
-        data: series
-    });
-}
-
-function drawAssetDebtChart() {
-    const series = getAnalysisSeries(["assetExcludingRealEstate", "debt"]);
-    createLineChart({
-        containerId: "assetDebtChart",
         series: [
+            { key: "netWorth",                 name: "순자산",             color: "#171717" },
             { key: "assetExcludingRealEstate", name: "자산(부동산 제외)", color: "#2f80ed" },
-            { key: "debt", name: "부채", color: "#eb5757" }
+            { key: "debt",                     name: "부채",               color: "#eb5757" }
         ],
         data: series
     });
@@ -2397,15 +2783,6 @@ function drawInvestmentChart() {
             { key: "stocks", name: "주식", color: "#27ae60" },
             { key: "coin", name: "비트코인", color: "#9b51e0" }
         ],
-        data: series
-    });
-}
-
-function drawDebtRepayChart() {
-    const series = getAnalysisSeries(["debt"]);
-    createLineChart({
-        containerId: "debtRepayChart",
-        series: [{ key: "debt", name: "총부채", color: "#eb5757" }],
         data: series
     });
 }
@@ -2426,30 +2803,23 @@ function drawAllocationChart() {
     });
 }
 
-function drawMonthlyIncreaseChart() {
-    const container = document.getElementById("monthlyIncreaseChart");
+function drawCandleChart() {
+    const container = document.getElementById("candleChart");
     if (!container) return;
 
     container.innerHTML = "";
 
-    if (analysisHistory.length < 2) {
-        container.innerHTML = `<div class="analysis-empty">데이터가 부족합니다.</div>`;
+    if (analysisHistory.length === 0) {
+        container.innerHTML = `<div class="analysis-empty">데이터가 없습니다.</div>`;
         return;
     }
 
-    const data = [];
+    const data = analysisHistory.map(r => {
+        const m = getHistoryMetrics(r);
+        return { date: r.date, value: m.netWorth };
+    });
 
-    for (let i = 1; i < analysisHistory.length; i++) {
-        const prev = getHistoryMetrics(analysisHistory[i - 1]);
-        const cur = getHistoryMetrics(analysisHistory[i]);
-
-        data.push({
-            date: analysisHistory[i].date,
-            value: cur.netWorth - prev.netWorth
-        });
-    }
-
-    createBarChart(container, data);
+    createCandleChart(container, data);
 }
 
 
@@ -2477,15 +2847,24 @@ function createLineChart(options) {
     const chartHeight = height - padding.top - padding.bottom;
 
     let maxValue = 0;
+    let minValue = Infinity;
 
     options.data.forEach(point => {
         options.series.forEach(serie => {
-            maxValue = Math.max(maxValue, Number(point[serie.key]) || 0);
+            const v = Number(point[serie.key]) || 0;
+            if (v > maxValue) maxValue = v;
+            if (v < minValue) minValue = v;
         });
     });
 
     if (maxValue <= 0) maxValue = 100;
-    maxValue *= 1.12;
+    if (minValue === Infinity) minValue = 0;
+
+    // 0 포함
+    if (minValue > 0) minValue = 0;
+
+    const range = maxValue - minValue || 1;
+    const paddedMax = maxValue + range * 0.12;
 
     const ns = "http://www.w3.org/2000/svg";
     const svg = document.createElementNS(ns, "svg");
@@ -2512,7 +2891,7 @@ function createLineChart(options) {
         line.setAttribute("class", "chart-grid-line");
         svg.appendChild(line);
 
-        const value = maxValue - maxValue * ratio;
+        const value = paddedMax - (paddedMax - minValue) * ratio;
 
         const text = document.createElementNS(ns, "text");
         text.setAttribute("x", padding.left - 7);
@@ -2529,7 +2908,7 @@ function createLineChart(options) {
     }
 
     function getY(value) {
-        const ratio = (maxValue - value) / maxValue;
+        const ratio = (paddedMax - value) / (paddedMax - minValue);
         return padding.top + chartHeight * ratio;
     }
 
@@ -2609,25 +2988,32 @@ function createLineChart(options) {
 
 
 /* ==================================================
-   Bar chart
+   Candle chart (B방식: 순자산 값을 캔들로)
 ================================================== */
 
-function createBarChart(container, data) {
+function createCandleChart(container, data) {
     const width = Math.max(container.clientWidth || 320, 280);
     const height = 250;
 
-    const padding = { top: 22, right: 14, bottom: 40, left: 52 };
+    const padding = { top: 22, right: 14, bottom: 34, left: 52 };
 
     const chartWidth = width - padding.left - padding.right;
     const chartHeight = height - padding.top - padding.bottom;
 
-    let maxAbs = 0;
+    let maxValue = 0;
+    let minValue = Infinity;
+
     data.forEach(d => {
-        maxAbs = Math.max(maxAbs, Math.abs(d.value));
+        if (d.value > maxValue) maxValue = d.value;
+        if (d.value < minValue) minValue = d.value;
     });
 
-    if (maxAbs <= 0) maxAbs = 100;
-    maxAbs *= 1.1;
+    if (maxValue <= 0) maxValue = 100;
+    if (minValue === Infinity) minValue = 0;
+    if (minValue > 0) minValue = 0;
+
+    const range = maxValue - minValue || 1;
+    const paddedMax = maxValue + range * 0.12;
 
     const ns = "http://www.w3.org/2000/svg";
     const svg = document.createElementNS(ns, "svg");
@@ -2640,39 +3026,88 @@ function createBarChart(container, data) {
     tooltip.className = "chart-tooltip";
     container.appendChild(tooltip);
 
-    const zeroY = padding.top + chartHeight / 2;
+    // 그리드
+    const gridCount = 4;
+    for (let i = 0; i <= gridCount; i++) {
+        const ratio = i / gridCount;
+        const y = padding.top + chartHeight * ratio;
 
-    const zeroLine = document.createElementNS(ns, "line");
-    zeroLine.setAttribute("x1", padding.left);
-    zeroLine.setAttribute("x2", width - padding.right);
-    zeroLine.setAttribute("y1", zeroY);
-    zeroLine.setAttribute("y2", zeroY);
-    zeroLine.setAttribute("stroke", "#bbb");
-    zeroLine.setAttribute("stroke-width", 1);
-    zeroLine.setAttribute("stroke-dasharray", "3 3");
-    svg.appendChild(zeroLine);
+        const line = document.createElementNS(ns, "line");
+        line.setAttribute("x1", padding.left);
+        line.setAttribute("x2", width - padding.right);
+        line.setAttribute("y1", y);
+        line.setAttribute("y2", y);
+        line.setAttribute("class", "chart-grid-line");
+        svg.appendChild(line);
 
-    const barGap = 4;
-    const barWidth = Math.max(
-        4,
-        (chartWidth - barGap * (data.length - 1)) / data.length
+        const value = paddedMax - (paddedMax - minValue) * ratio;
+
+        const text = document.createElementNS(ns, "text");
+        text.setAttribute("x", padding.left - 7);
+        text.setAttribute("y", y + 3);
+        text.setAttribute("text-anchor", "end");
+        text.setAttribute("class", "chart-axis-text");
+        text.textContent = formatChartAxis(value);
+        svg.appendChild(text);
+    }
+
+    function getY(value) {
+        const ratio = (paddedMax - value) / (paddedMax - minValue);
+        return padding.top + chartHeight * ratio;
+    }
+
+    const candleGap = 6;
+    const candleWidth = Math.max(
+        6,
+        (chartWidth - candleGap * (data.length - 1)) / data.length
     );
 
+    // 각 캔들의 중심 x
+    function getCX(index) {
+        return padding.left + index * (candleWidth + candleGap) + candleWidth / 2;
+    }
+
     data.forEach((point, index) => {
-        const x = padding.left + index * (barWidth + barGap);
-        const barH = (Math.abs(point.value) / maxAbs) * (chartHeight / 2);
+        const cx = getCX(index);
+        const y = getY(point.value);
 
-        const y = point.value >= 0 ? zeroY - barH : zeroY;
+        // 이전 시점 값 (없으면 자기 자신)
+        const prevValue = index === 0 ? point.value : data[index - 1].value;
+        const prevY = getY(prevValue);
 
+        const bodyTop = Math.min(y, prevY);
+        const bodyBottom = Math.max(y, prevY);
+        const bodyHeight = Math.max(2, bodyBottom - bodyTop);
+
+        // 색상: 순자산 증가 = 빨강, 감소 = 파랑
+        const isUp = point.value >= prevValue;
+        const color = isUp ? "#eb5757" : "#2f80ed";
+
+        // 심지: 이전값~현재값 범위 살짝 확장해서 표현
+        const wickTop = Math.min(y, prevY) - 6;
+        const wickBottom = Math.max(y, prevY) + 6;
+
+        const wick = document.createElementNS(ns, "line");
+        wick.setAttribute("x1", cx);
+        wick.setAttribute("x2", cx);
+        wick.setAttribute("y1", wickTop);
+        wick.setAttribute("y2", wickBottom);
+        wick.setAttribute("stroke", color);
+        wick.setAttribute("stroke-width", 1.5);
+        svg.appendChild(wick);
+
+        // 몸통
         const rect = document.createElementNS(ns, "rect");
-        rect.setAttribute("x", x);
-        rect.setAttribute("y", y);
-        rect.setAttribute("width", barWidth);
-        rect.setAttribute("height", Math.max(1, barH));
-        rect.setAttribute("rx", 3);
-        rect.setAttribute("fill", point.value >= 0 ? "#eb5757" : "#2f80ed");
+        rect.setAttribute("x", cx - candleWidth / 2);
+        rect.setAttribute("y", bodyTop);
+        rect.setAttribute("width", candleWidth);
+        rect.setAttribute("height", bodyHeight);
+        rect.setAttribute("rx", 2);
+        rect.setAttribute("fill", isUp ? "#eb5757" : "#2f80ed");
+        rect.setAttribute("class", "candle-body");
         svg.appendChild(rect);
 
+        // x축 라벨
         const shouldShow =
             data.length <= 6 ||
             index === 0 ||
@@ -2681,7 +3116,7 @@ function createBarChart(container, data) {
 
         if (shouldShow) {
             const text = document.createElementNS(ns, "text");
-            text.setAttribute("x", x + barWidth / 2);
+            text.setAttribute("x", cx);
             text.setAttribute("y", height - 10);
             text.setAttribute("text-anchor", "middle");
             text.setAttribute("class", "chart-axis-text");
@@ -2689,10 +3124,11 @@ function createBarChart(container, data) {
             svg.appendChild(text);
         }
 
+        // 히트 영역
         const hit = document.createElementNS(ns, "rect");
-        hit.setAttribute("x", x - 2);
+        hit.setAttribute("x", cx - candleWidth / 2 - 3);
         hit.setAttribute("y", padding.top);
-        hit.setAttribute("width", barWidth + 4);
+        hit.setAttribute("width", candleWidth + 6);
         hit.setAttribute("height", chartHeight);
         hit.setAttribute("fill", "transparent");
         hit.setAttribute("class", "chart-point-hit");
@@ -2703,9 +3139,8 @@ function createBarChart(container, data) {
 
             showChartTooltip(
                 container, tooltip, point.date,
-                "증가액", point.value,
-                x + barWidth / 2,
-                point.value >= 0 ? zeroY - barH : zeroY + barH
+                "순자산", point.value,
+                cx, y
             );
         });
 
@@ -2725,8 +3160,9 @@ function createBarChart(container, data) {
 ================================================== */
 
 function showChartTooltip(container, tooltip, date, seriesName, value, x, y) {
-    const sign = value > 0 ? "+" : value < 0 ? "−" : "";
+    // 요청: ₩ 뒤에 + 없이 그냥 금액
     const abs = Math.abs(value);
+    const sign = value < 0 ? "−" : "";
 
     tooltip.innerHTML = `
         <div class="chart-tooltip-date">${formatFullDate(date)}</div>
@@ -2811,10 +3247,8 @@ window.addEventListener("resize", function () {
 
     resizeTimer = setTimeout(function () {
         if (document.getElementById("netWorthChart"))       drawNetWorthChart();
-        if (document.getElementById("assetDebtChart"))      drawAssetDebtChart();
         if (document.getElementById("investmentChart"))     drawInvestmentChart();
-        if (document.getElementById("debtRepayChart"))      drawDebtRepayChart();
         if (document.getElementById("allocationChart"))     drawAllocationChart();
-        if (document.getElementById("monthlyIncreaseChart")) drawMonthlyIncreaseChart();
+        if (document.getElementById("candleChart"))         drawCandleChart();
     }, 250);
 });

@@ -180,20 +180,20 @@
 
 
 <!-- =========================
-     DETAIL
+     INVESTMENT (기존 상세탭)
 ========================= -->
 
 <main id="detailPage" class="page">
 
     <div class="empty-page">
 
-        <div class="empty-icon">☷</div>
+        <div class="empty-icon">₩</div>
 
-        <h2>상세</h2>
+        <h2>투자자산</h2>
 
         <p>
-            날짜별 자산 내역을<br>
-            확인할 수 있습니다.
+            종목별 매수금액과<br>
+            현재 평가금액을 관리합니다.
         </p>
 
     </div>
@@ -285,8 +285,8 @@
 
 
     <button class="nav-item" data-page="detail">
-        <div class="nav-icon">☷</div>
-        <span>상세</span>
+        <div class="nav-icon">₩</div>
+        <span>투자자산</span>
     </button>
 
 
@@ -299,6 +299,53 @@
 
 
 </div>
+
+
+
+<!-- =========================
+     CUSTOM MODAL (prompt/confirm 대체)
+========================= -->
+
+<div class="modal-backdrop" id="modalBackdrop">
+
+    <div class="modal-sheet" id="modalSheet">
+
+        <div class="modal-handle"></div>
+
+        <div class="modal-title" id="modalTitle"></div>
+
+        <div class="modal-desc" id="modalDesc"></div>
+
+        <input
+            type="text"
+            class="modal-input"
+            id="modalInput"
+            autocomplete="off"
+        >
+
+        <div class="modal-actions" id="modalActions">
+            <button type="button" class="modal-btn cancel" id="modalCancel">취소</button>
+            <button type="button" class="modal-btn confirm" id="modalConfirm">확인</button>
+        </div>
+
+    </div>
+
+</div>
+
+
+
+<!-- =========================
+     CONTEXT MENU (롱프레스)
+========================= -->
+
+<div class="context-menu" id="contextMenu">
+
+    <button type="button" data-action="edit">이름 수정</button>
+    <button type="button" data-action="add">하위 추가</button>
+    <button type="button" data-action="delete" class="danger">삭제</button>
+
+</div>
+
 
 
 <!-- Supabase SDK -->

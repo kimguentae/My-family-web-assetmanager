@@ -723,6 +723,8 @@ button {
     max-width: 700px;
     height: 82px;
     background: rgba(255,255,255,.97);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     border-top: 1px solid #e8e8e8;
     display: grid;
     grid-template-columns: repeat(5, 1fr);
@@ -817,6 +819,10 @@ button {
     cursor: pointer;
 }
 
+.candle-body {
+    transition: opacity .15s ease;
+}
+
 .chart-tooltip {
     position: absolute;
     display: none;
@@ -861,6 +867,7 @@ button {
     display: inline-block;
 }
 
+.net-line { background: #171717; }
 .asset-line { background: #2f80ed; }
 .debt-line { background: #eb5757; }
 .stock-line { background: #27ae60; }
@@ -915,6 +922,7 @@ button {
     margin-top: 5px;
 }
 
+/* 요청: + 는 빨강, − 는 파랑 */
 .metric-delta.up { color: #eb5757; }
 .metric-delta.down { color: #2f80ed; }
 .metric-delta.neutral { color: #999; }
@@ -959,9 +967,42 @@ button {
 
 .donut-svg-wrap {
     position: relative;
-    flex: 0 0 160px;
-    width: 160px;
-    height: 160px;
+    flex: 0 0 200px;
+    width: 200px;
+    height: 200px;
+}
+
+.donut-slice {
+    transition: transform .25s ease, opacity .25s ease, stroke-width .25s ease;
+}
+
+.donut-slice.active {
+    transform: scale(1.06);
+    filter: drop-shadow(0 2px 6px rgba(0,0,0,.2));
+}
+
+.donut-slice-text {
+    font-size: 11px;
+    font-weight: 700;
+    fill: white;
+    pointer-events: none;
+    text-shadow: 0 1px 2px rgba(0,0,0,.35);
+    font-family:
+        -apple-system, BlinkMacSystemFont,
+        "Apple SD Gothic Neo", "Noto Sans KR",
+        sans-serif;
+}
+
+.donut-slice-pct {
+    font-size: 10px;
+    font-weight: 800;
+    fill: rgba(255,255,255,.95);
+    pointer-events: none;
+    text-shadow: 0 1px 2px rgba(0,0,0,.35);
+    font-family:
+        -apple-system, BlinkMacSystemFont,
+        "Apple SD Gothic Neo", "Noto Sans KR",
+        sans-serif;
 }
 
 .donut-legend {
@@ -977,6 +1018,14 @@ button {
     align-items: center;
     gap: 8px;
     font-size: 13px;
+    padding: 4px 6px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background .15s ease;
+}
+
+.donut-legend-item.active {
+    background: #f3f4f6;
 }
 
 .donut-legend-color {
@@ -1175,8 +1224,6 @@ button {
     cursor: default;
 }
 
-/* Goal input */
-
 .goal-input-row {
     display: flex;
     align-items: center;
@@ -1212,8 +1259,6 @@ button {
     border-color: #171717;
     background: white;
 }
-
-/* Toggle */
 
 .toggle {
     position: relative;
@@ -1253,6 +1298,54 @@ button {
     font-size: 14px;
     font-weight: 800;
     cursor: pointer;
+}
+
+
+/* =========================
+   SETTINGS ACCORDION
+========================= */
+
+.settings-card.collapsible {
+    padding: 0;
+    overflow: hidden;
+}
+
+.settings-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 18px 16px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.settings-card-header .settings-title {
+    margin-bottom: 4px;
+}
+
+.settings-card-header .settings-desc {
+    margin-bottom: 0;
+}
+
+.settings-card-arrow {
+    font-size: 22px;
+    color: #999;
+    transition: transform .2s ease;
+    flex: 0 0 auto;
+}
+
+.settings-card.collapsible.open .settings-card-arrow {
+    transform: rotate(90deg);
+}
+
+.settings-card-body {
+    display: none;
+    padding: 0 16px 16px;
+}
+
+.settings-card.collapsible.open .settings-card-body {
+    display: block;
 }
 
 
@@ -1337,6 +1430,172 @@ button {
 
 
 /* =========================
+   CUSTOM MODAL (iOS 스타일)
+========================= */
+
+.modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.4);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    z-index: 3000;
+    display: none;
+    align-items: flex-end;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity .2s ease;
+}
+
+.modal-backdrop.show {
+    display: flex;
+    opacity: 1;
+}
+
+.modal-sheet {
+    width: 100%;
+    max-width: 700px;
+    background: white;
+    border-radius: 22px 22px 0 0;
+    padding: 12px 20px 24px;
+    box-sizing: border-box;
+    transform: translateY(100%);
+    transition: transform .28s cubic-bezier(.2,.9,.3,1);
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.modal-backdrop.show .modal-sheet {
+    transform: translateY(0);
+}
+
+.modal-handle {
+    width: 40px;
+    height: 4px;
+    background: #ddd;
+    border-radius: 2px;
+    margin: 0 auto 16px;
+}
+
+.modal-title {
+    font-size: 18px;
+    font-weight: 800;
+    margin-bottom: 6px;
+    color: #171717;
+}
+
+.modal-desc {
+    font-size: 13px;
+    color: #777;
+    line-height: 1.5;
+    margin-bottom: 14px;
+}
+
+.modal-input {
+    width: 100%;
+    height: 48px;
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    padding: 0 14px;
+    font-size: 16px;
+    font-weight: 600;
+    outline: 0;
+    background: #fafafa;
+    color: #171717;
+    margin-bottom: 14px;
+    box-sizing: border-box;
+}
+
+.modal-input:focus {
+    border-color: #171717;
+    background: white;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 6px;
+}
+
+.modal-btn {
+    flex: 1;
+    height: 50px;
+    border-radius: 14px;
+    font-size: 16px;
+    font-weight: 800;
+    cursor: pointer;
+    border: 0;
+    transition: opacity .15s ease;
+}
+
+.modal-btn:active {
+    opacity: .7;
+}
+
+.modal-btn.cancel {
+    background: #f1f2f4;
+    color: #444;
+}
+
+.modal-btn.confirm {
+    background: #171717;
+    color: white;
+}
+
+.modal-btn.confirm.danger {
+    background: #eb5757;
+}
+
+
+/* =========================
+   CONTEXT MENU (롱프레스)
+========================= */
+
+.context-menu {
+    position: fixed;
+    z-index: 2500;
+    display: none;
+    flex-direction: column;
+    min-width: 150px;
+    background: white;
+    border-radius: 14px;
+    box-shadow: 0 8px 30px rgba(0,0,0,.18);
+    overflow: hidden;
+    padding: 6px 0;
+    opacity: 0;
+    transform: scale(.92);
+    transition: opacity .15s ease, transform .15s ease;
+}
+
+.context-menu.show {
+    display: flex;
+    opacity: 1;
+    transform: scale(1);
+}
+
+.context-menu button {
+    padding: 12px 18px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+    text-align: left;
+    cursor: pointer;
+    border: 0;
+    background: none;
+    transition: background .12s ease;
+}
+
+.context-menu button:hover,
+.context-menu button:active {
+    background: #f3f4f6;
+}
+
+.context-menu button.danger {
+    color: #eb5757;
+}
+
+
+/* =========================
    MOBILE
 ========================= */
 
@@ -1358,56 +1617,9 @@ button {
     .chart-container svg { min-height: 230px; height: 230px; }
 
     .donut-wrap { flex-direction: column; gap: 12px; }
-    .donut-svg-wrap { width: 160px; height: 160px; }
+    .donut-svg-wrap { width: 200px; height: 200px; }
 
     .metric-value { font-size: 17px; }
 
     .goal-input-label { flex-basis: 110px; font-size: 12px; }
-}
-
-/* =========================
-   SETTINGS ACCORDION
-========================= */
-
-.settings-card.collapsible {
-    padding: 0;
-    overflow: hidden;
-}
-
-.settings-card-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    padding: 18px 16px;
-    cursor: pointer;
-    user-select: none;
-}
-
-.settings-card-header .settings-title {
-    margin-bottom: 4px;
-}
-
-.settings-card-header .settings-desc {
-    margin-bottom: 0;
-}
-
-.settings-card-arrow {
-    font-size: 22px;
-    color: #999;
-    transition: transform .2s ease;
-    flex: 0 0 auto;
-}
-
-.settings-card.collapsible.open .settings-card-arrow {
-    transform: rotate(90deg);
-}
-
-.settings-card-body {
-    display: none;
-    padding: 0 16px 16px;
-}
-
-.settings-card.collapsible.open .settings-card-body {
-    display: block;
 }
