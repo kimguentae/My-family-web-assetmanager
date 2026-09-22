@@ -237,6 +237,7 @@ function initNavigation() {
 
             if (page === "analysis") renderAnalysis();
             if (page === "settings") renderSettings();
+            if (page === "detail")   renderInvestment();
 
         });
     });
@@ -3252,3 +3253,473 @@ window.addEventListener("resize", function () {
         if (document.getElementById("candleChart"))         drawCandleChart();
     }, 250);
 });
+
+/* ==================================================
+   INVESTMENT — 투자자산 종목 관리
+================================================== */
+
+let holdings = [];             // [{id, middle_id, name, buy_amount, shares, memo}, ...]
+let holdingsLoaded = false;
+let latestValuesCache = null;  // 가장 최근 날짜의 입력값 (현재금액 계산용)
+
+
+/* ==================================================
+   투자자산 탭 렌더
+================================================== */
+
+async function renderInvestment() {
+    const container = document.getElementById("investmentContainer");
+    if (!container) return;
+
+    container.innerHTML = `<div class="analysis-card">
+        <div class="analysis-empty">불러오는 중...</div>
+    </div>`;
+
+    try {
+        // 1) 종목 불러오기
+        await loadHoldings();
+
+        // 2) 최신 입력값 불러오기 (현재금액 계산용)
+        await loadLatestValues();
+
+        // 3) 렌더
+        renderInvestmentUI(container);
+
+    } catch (e) {
+        console.error("Investment load error:", e);
+        container.innerHTML = `<div class="analysis-card">
+            <div class="analysis-empty">불러오지 못했습니다.</div>
+        </div>`;
+    }
+}
+
+
+/* ==================================================
+   종목 로드
+================================================== */
+
+async function loadHoldings() {
+    const { data, error } = await supabaseClient
+        .from("investment_holdings")
+        .select("id, middle_id, name, buy_amount, shares, memo")
+        .order("middle_id", { ascending: true })
+        .order("id", { ascending: true });
+
+    if (error) {
+        console.error("loadHoldings error:", error);
+        holdings = [];
+        return;
+    }
+
+    holdings = (data || []).map(row => ({
+        id: row.id,
+        middleId: row.middle_id,
+        name: row.name,
+        buyAmount: Number(row.buy_amount) || 0,
+        shares: row.shares === null ? null : Number(row.shares),
+        memo: row.memo || ""
+        currentAmount: Number(row.memo) || 0 
+    }));
+
+    holdingsLoaded = true;
+}
+
+
+/* ==================================================
+   최신 입력값 (현재금액 계산용)
+================================================== */
+
+async function loadLatestValues() {
+    // 가장 최근 base_date 의 values 를 가져옴
+    const { data, error } = await supabaseClient
+        .from("asset_records")
+        .select("base_date, values")
+        .order("base_date", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+    if (error || !data) {
+        latestValuesCache = { date: null, values: {} };
+        return;
+    }
+
+    latestValuesCache = {
+        date: data.base_date,
+        values: data.values || {}
+    };
+}
+
+
+/* ==================================================
+   현재가 조회
+   - 우선순위:
+     1) 최신 입력값에 소분류 id 가 있으면 그 값
+     2) 없으면 종목이 속한 중분류의 합계
+================================================== */
+
+function getCurrentValueForHolding(holding) {
+    if (!latestValuesCache) return 0;
+
+    const values = latestValuesCache.values || {};
+
+    // 소분류 id 매칭: 종목 이름이 소분류 이름과 같으면 매칭되는 걸 찾아서 사용
+    // (기본 트리에는 소분류가 없으므로 대부분 중분류 합계로 처리)
+    // 여기서는 단순하게 '종목이 속한 중분류 금액'을 그대로 나눠쓰지 않고
+    // 각 종목의 현재금액을 별도로 관리하도록 'shares' 기반이 아니면
+    // 종목 입력 시 current_amount 를 별도로 받도록 확장 가능.
+    //
+    // 요구사항: "기존 입력탭 최근꺼 자산을 가져와야지" → 중분류 합계로 계산
+    // 하지만 종목별로 나눠야 하니, 종목별 '현재금액'은 사용자가 매번 입력하기로 함.
+
+    // 여기서는 종목에 저장된 currentAmount 를 그대로 사용 (아래에서 처리)
+    return Number(holding.currentAmount) || 0;
+}
+
+
+/* ==================================================
+   투자자산 UI
+================================================== */
+
+function renderInvestmentUI(container) {
+    container.innerHTML = "";
+
+    // 최신 입력값 날짜 배지
+    const dateBadge = document.createElement("div");
+    dateBadge.className = "inv-date-badge";
+    dateBadge.textContent = latestValuesCache && latestValuesCache.date
+        ? `현재금액 기준: ${formatFullDate(latestValuesCache.date)}`
+        : `현재금액 기준: 입력값 없음`;
+    container.appendChild(dateBadge);
+
+    // 투자자산 대분류 찾기
+    const investRoot = tree.find(t => t.id === "asset_investment");
+
+    if (!investRoot) {
+        const empty = document.createElement("div");
+        empty.className = "analysis-card";
+        empty.innerHTML = `<div class="analysis-empty">투자자산 항목이 없습니다.</div>`;
+        container.appendChild(empty);
+        return;
+    }
+
+    // 전체 요약 카드
+    const summary = createInvestmentSummaryCard(investRoot);
+    container.appendChild(summary);
+
+    // 중분류별 카드
+    (investRoot.children || []).forEach(middle => {
+        container.appendChild(createInvestmentGroupCard(middle));
+    });
+}
+
+
+/* ==================================================
+   전체 요약 카드
+================================================== */
+
+function createInvestmentSummaryCard(investRoot) {
+    const card = document.createElement("section");
+    card.className = "analysis-card investment-summary";
+
+    let totalBuy = 0;
+    let totalCurrent = 0;
+
+    (investRoot.children || []).forEach(middle => {
+        holdings
+            .filter(h => h.middleId === middle.id)
+            .forEach(h => {
+                totalBuy += Number(h.buyAmount) || 0;
+                totalCurrent += getHoldingCurrentValue(h, middle);
+            });
+    });
+
+    const diff = totalCurrent - totalBuy;
+    const pct = totalBuy > 0 ? (diff / totalBuy * 100) : 0;
+
+    const cls = diff > 0 ? "pos" : diff < 0 ? "neg" : "zero";
+    const sign = diff > 0 ? "+" : diff < 0 ? "−" : "";
+
+    card.innerHTML = `
+        <div class="analysis-title"><div>전체 투자자산 요약</div></div>
+
+        <div class="inv-summary-grid">
+            <div class="inv-summary-item">
+                <div class="inv-summary-label">총 매수금액</div>
+                <div class="inv-summary-value">₩${formatNumber(totalBuy)}</div>
+            </div>
+            <div class="inv-summary-item">
+                <div class="inv-summary-label">총 현재금액</div>
+                <div class="inv-summary-value">₩${formatNumber(totalCurrent)}</div>
+            </div>
+        </div>
+
+        <div class="inv-summary-result">
+            <div class="inv-summary-result-label">총 손익</div>
+            <div class="inv-summary-result-value ${cls}">
+                ${sign}₩${formatNumber(Math.abs(diff))}
+                <span class="inv-pct">(${sign}${Math.abs(pct).toFixed(2)}%)</span>
+            </div>
+        </div>
+    `;
+
+    return card;
+}
+
+
+/* ==================================================
+   종목의 현재금액 계산
+   - 종목이 소분류 id 와 이름이 같으면 그 값
+   - 아니면 종목에 저장된 currentAmount 값
+   - 없으면 0
+================================================== */
+
+function getHoldingCurrentValue(holding, middle) {
+    if (!latestValuesCache) return 0;
+
+    const values = latestValuesCache.values || {};
+
+    // 1) 소분류 id 매칭
+    const matched = (middle.children || []).find(c => c.name === holding.name);
+    if (matched && Object.prototype.hasOwnProperty.call(values, matched.id)) {
+        return Number(values[matched.id]) || 0;
+    }
+
+    // 2) 종목 자체에 저장된 currentAmount
+    return Number(holding.currentAmount) || 0;
+}
+
+
+/* ==================================================
+   중분류 그룹 카드
+================================================== */
+
+function createInvestmentGroupCard(middle) {
+    const card = document.createElement("section");
+    card.className = "analysis-card investment-group";
+
+    const groupHoldings = holdings.filter(h => h.middleId === middle.id);
+
+    let groupBuy = 0;
+    let groupCurrent = 0;
+
+    groupHoldings.forEach(h => {
+        groupBuy += Number(h.buyAmount) || 0;
+        groupCurrent += getHoldingCurrentValue(h, middle);
+    });
+
+    const groupDiff = groupCurrent - groupBuy;
+    const groupPct = groupBuy > 0 ? (groupDiff / groupBuy * 100) : 0;
+
+    const title = document.createElement("div");
+    title.className = "analysis-title";
+
+    const groupCls = groupDiff > 0 ? "pos" : groupDiff < 0 ? "neg" : "zero";
+    const groupSign = groupDiff > 0 ? "+" : groupDiff < 0 ? "−" : "";
+
+    title.innerHTML = `
+        <div class="inv-group-name">${escapeHtml(middle.name)}</div>
+        <div class="inv-group-total ${groupCls}">
+            ${groupSign}₩${formatNumber(Math.abs(groupDiff))}
+            <span class="inv-pct">(${groupSign}${Math.abs(groupPct).toFixed(2)}%)</span>
+        </div>
+    `;
+
+    card.appendChild(title);
+
+    // 종목 리스트
+    const list = document.createElement("div");
+    list.className = "inv-holdings-list";
+
+    if (groupHoldings.length === 0) {
+        const empty = document.createElement("div");
+        empty.className = "inv-empty";
+        empty.textContent = "종목이 없습니다. 아래 버튼으로 추가하세요.";
+        list.appendChild(empty);
+    } else {
+        groupHoldings.forEach(h => {
+            list.appendChild(createHoldingRow(h, middle));
+        });
+    }
+
+    card.appendChild(list);
+
+    // 추가 버튼
+    const addBtn = document.createElement("button");
+    addBtn.type = "button";
+    addBtn.className = "inv-add-btn";
+    addBtn.textContent = "＋ 종목 추가";
+    addBtn.addEventListener("click", () => addHolding(middle.id));
+    card.appendChild(addBtn);
+
+    return card;
+}
+
+
+/* ==================================================
+   종목 행
+================================================== */
+
+function createHoldingRow(holding, middle) {
+    const row = document.createElement("div");
+    row.className = "inv-holding-row";
+
+    const buy = Number(holding.buyAmount) || 0;
+    const current = getHoldingCurrentValue(holding, middle);
+    const diff = current - buy;
+    const pct = buy > 0 ? (diff / buy * 100) : 0;
+
+    const cls = diff > 0 ? "pos" : diff < 0 ? "neg" : "zero";
+    const sign = diff > 0 ? "+" : diff < 0 ? "−" : "";
+
+    row.innerHTML = `
+        <div class="inv-holding-head">
+            <div class="inv-holding-name">${escapeHtml(holding.name)}</div>
+            <div class="inv-holding-actions">
+                <button type="button" class="inv-icon-btn edit" data-act="edit" title="수정">✎</button>
+                <button type="button" class="inv-icon-btn delete" data-act="delete" title="삭제">✕</button>
+            </div>
+        </div>
+
+        <div class="inv-holding-body">
+            <div class="inv-holding-cell">
+                <div class="inv-cell-label">매수금액</div>
+                <div class="inv-cell-value">₩${formatNumber(buy)}</div>
+            </div>
+            <div class="inv-holding-cell">
+                <div class="inv-cell-label">현재금액</div>
+                <div class="inv-cell-value">₩${formatNumber(current)}</div>
+            </div>
+            <div class="inv-holding-cell">
+                <div class="inv-cell-label">손익</div>
+                <div class="inv-cell-value ${cls}">
+                    ${sign}₩${formatNumber(Math.abs(diff))}
+                </div>
+            </div>
+            <div class="inv-holding-cell">
+                <div class="inv-cell-label">수익률</div>
+                <div class="inv-cell-value ${cls}">
+                    ${sign}${Math.abs(pct).toFixed(2)}%
+                </div>
+            </div>
+        </div>
+    `;
+
+    row.querySelector('[data-act="edit"]').addEventListener("click", (e) => {
+        e.stopPropagation();
+        editHolding(holding.id);
+    });
+
+    row.querySelector('[data-act="delete"]').addEventListener("click", (e) => {
+        e.stopPropagation();
+        deleteHolding(holding.id);
+    });
+
+    return row;
+}
+
+
+/* ==================================================
+   종목 CRUD
+================================================== */
+
+async function addHolding(middleId) {
+    const name = await modalPrompt("종목 추가", "", { placeholder: "종목명" });
+    if (!name) return;
+
+    const buyStr = await modalPrompt("매수금액 입력 (₩)", "", {
+        desc: `"${name}"의 총 매수금액`,
+        placeholder: "예: 1000000"
+    });
+    if (buyStr === null) return;
+
+    const buyAmount = Number(String(buyStr).replace(/[^0-9]/g, "")) || 0;
+
+    const currentStr = await modalPrompt("현재금액 입력 (₩)", "", {
+        desc: `"${name}"의 현재 평가금액`,
+        placeholder: "예: 1200000"
+    });
+    if (currentStr === null) return;
+
+    const currentAmount = Number(String(currentStr).replace(/[^0-9]/g, "")) || 0;
+
+    const { error } = await supabaseClient
+        .from("investment_holdings")
+        .insert({
+            middle_id: middleId,
+            name: name,
+            buy_amount: buyAmount,
+            memo: String(currentAmount) // 현재금액은 memo에 임시 저장
+        });
+
+    if (error) {
+        console.error("addHolding error:", error);
+        await modalAlert("저장 실패", error.message || "종목을 저장할 수 없습니다.");
+        return;
+    }
+
+    await renderInvestment();
+}
+
+
+async function editHolding(id) {
+    const holding = holdings.find(h => h.id === id);
+    if (!holding) return;
+
+    const name = await modalPrompt("종목명 수정", holding.name);
+    if (!name) return;
+
+    const buyStr = await modalPrompt("매수금액 수정 (₩)", formatNumber(holding.buyAmount));
+    if (buyStr === null) return;
+
+    const buyAmount = Number(String(buyStr).replace(/[^0-9]/g, "")) || 0;
+
+    const currentStr = await modalPrompt(
+        "현재금액 수정 (₩)",
+        formatNumber(holding.currentAmount || 0)
+    );
+    if (currentStr === null) return;
+
+    const currentAmount = Number(String(currentStr).replace(/[^0-9]/g, "")) || 0;
+
+    const { error } = await supabaseClient
+        .from("investment_holdings")
+        .update({
+            name: name,
+            buy_amount: buyAmount,
+            memo: String(currentAmount)
+        })
+        .eq("id", id);
+
+    if (error) {
+        console.error("editHolding error:", error);
+        await modalAlert("수정 실패", error.message || "수정할 수 없습니다.");
+        return;
+    }
+
+    await renderInvestment();
+}
+
+
+async function deleteHolding(id) {
+    const holding = holdings.find(h => h.id === id);
+    if (!holding) return;
+
+    const ok = await modalConfirm(`"${holding.name}" 삭제`, "삭제하면 되돌릴 수 없습니다.", {
+        confirmText: "삭제",
+        danger: true
+    });
+    if (!ok) return;
+
+    const { error } = await supabaseClient
+        .from("investment_holdings")
+        .delete()
+        .eq("id", id);
+
+    if (error) {
+        console.error("deleteHolding error:", error);
+        await modalAlert("삭제 실패", error.message || "삭제할 수 없습니다.");
+        return;
+    }
+
+    await renderInvestment();
+}
