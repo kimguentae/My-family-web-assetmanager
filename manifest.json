@@ -1,0 +1,14 @@
+{
+  "name": "MY ASSET",
+  "short_name": "MY ASSET",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f5f6f8",
+  "theme_color": "#171717",
+  "lang": "ko",
+  "icons": [
+    { "src": "myasset_icon.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "myasset_icon.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
