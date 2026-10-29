@@ -1,5 +1,5 @@
 /* ==================================================
-   MY ASSET - api.js (개선판)
+   MY ASSET - api.js (로그인 지원판)
 ================================================== */
 
 
@@ -128,6 +128,8 @@ const ANALYSIS_SECTIONS = [
    상태
 ================================================== */
 
+let currentUser = null;
+
 let tree = loadTree();
 
 let selectedDate =
@@ -160,38 +162,119 @@ document.addEventListener("DOMContentLoaded", async function () {
 
     initSupabaseClient();
 
+    if (!supabaseClient) {
+        document.body.innerHTML = `
+            <div style="padding:40px;text-align:center;">
+                <h2>연결 실패</h2>
+                <p>Supabase SDK를 불러오지 못했습니다. 새로고침해주세요.</p>
+            </div>
+        `;
+        return;
+    }
+
+    // ★ 인증 확인
+    const { data: { session } } = await supabaseClient.auth.getSession();
+
+    if (!session) {
+        showLoginScreen();
+        return;
+    }
+
+    // ★ 로그인됨
+    currentUser = session.user;
+
+    // 인증 상태 변경 감지
+    supabaseClient.auth.onAuthStateChange((event, sess) => {
+        if (event === "SIGNED_OUT") {
+            location.reload();
+        }
+        if (event === "SIGNED_IN" && sess && !currentUser) {
+            location.reload();
+        }
+    });
+
+    // 화면 전환
+    const loginScreen = document.getElementById("loginScreen");
+    const appRoot = document.getElementById("appRoot");
+    if (loginScreen) loginScreen.style.display = "none";
+    if (appRoot) appRoot.style.display = "";
+
+    // 계정 이메일 표시
+    const accountEmail = document.getElementById("accountEmail");
+    if (accountEmail) accountEmail.textContent = currentUser.email || "-";
+
+    // ── 기존 앱 초기화 ──
     normalizeTree();
-
     updateDate();
-
     initNavigation();
-
     initDate();
-
     initSave();
-
     initNetWorthStack();
-
     initHomeGroups();
-
     initGlobalSwipeReset();
-
     initSettings();
-
     initContextMenu();
-
     renderInput();
 
     await loadDateData();
 
-    // 목표도 Supabase에서 갱신
     const remoteGoals = await loadGoalsFromSupabase();
     if (remoteGoals) {
         goals = remoteGoals;
         saveGoals();
     }
-
 });
+
+
+/* ==================================================
+   로그인 화면
+================================================== */
+
+function showLoginScreen() {
+    const loginScreen = document.getElementById("loginScreen");
+    const appRoot = document.getElementById("appRoot");
+
+    if (loginScreen) loginScreen.style.display = "flex";
+    if (appRoot) appRoot.style.display = "none";
+
+    const emailInput = document.getElementById("loginEmail");
+    const loginBtn = document.getElementById("loginBtn");
+    const loginMsg = document.getElementById("loginMsg");
+
+    if (!emailInput || !loginBtn) return;
+
+    emailInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            loginBtn.click();
+        }
+    });
+
+    loginBtn.addEventListener("click", async () => {
+        const email = emailInput.value.trim();
+        if (!email) return;
+
+        loginBtn.disabled = true;
+        loginBtn.textContent = "전송 중...";
+        if (loginMsg) loginMsg.textContent = "";
+
+        const { error } = await supabaseClient.auth.signInWithOtp({
+            email,
+            options: {
+                emailRedirectTo: window.location.origin,
+            },
+        });
+
+        loginBtn.disabled = false;
+        loginBtn.textContent = "로그인 링크 받기";
+
+        if (loginMsg) {
+            loginMsg.textContent = error
+                ? "오류: " + error.message
+                : "이메일을 확인해주세요! 링크를 클릭하면 로그인됩니다.";
+        }
+    });
+}
 
 
 /* ==================================================
@@ -371,6 +454,11 @@ async function saveAll() {
     const status = document.getElementById("saveStatus");
     if (!button) return;
 
+    if (!currentUser) {
+        if (status) status.textContent = "로그인이 필요합니다.";
+        return;
+    }
+
     closeAllSwipes();
 
     button.disabled = true;
@@ -382,7 +470,7 @@ async function saveAll() {
         const values = collectValues();
 
         localStorage.setItem(
-            "myAssetValues_" + selectedDate,
+            "myAssetValues_" + currentUser.id + "_" + selectedDate,
             JSON.stringify(values)
         );
 
@@ -419,18 +507,19 @@ async function saveAll() {
 
 async function saveToSupabase(data) {
     const client = initSupabaseClient();
-    if (!client) return { success: false, error: "no client" };
+    if (!client || !currentUser) return { success: false, error: "no auth" };
 
     try {
         const { error } = await client
             .from("asset_records")
             .upsert(
                 {
+                    user_id: currentUser.id,
                     base_date: data.baseDate,
                     values: data.values,
                     tree: data.tree
                 },
-                { onConflict: "base_date" }
+                { onConflict: "user_id,base_date" }
             );
 
         if (error) {
@@ -449,12 +538,13 @@ async function saveToSupabase(data) {
 
 async function loadFromSupabase(date) {
     const client = initSupabaseClient();
-    if (!client) return { success: false, error: "no client" };
+    if (!client || !currentUser) return { success: false, error: "no auth" };
 
     try {
         const { data, error } = await client
             .from("asset_records")
             .select("values, tree")
+            .eq("user_id", currentUser.id)
             .eq("base_date", date)
             .maybeSingle();
 
@@ -484,12 +574,13 @@ async function loadFromSupabase(date) {
 
 async function loadHistoryFromSupabase() {
     const client = initSupabaseClient();
-    if (!client) return { success: false, error: "no client" };
+    if (!client || !currentUser) return { success: false, error: "no auth" };
 
     try {
         const { data, error } = await client
             .from("asset_records")
             .select("base_date, values, tree")
+            .eq("user_id", currentUser.id)
             .order("base_date", { ascending: true });
 
         if (error) {
@@ -1327,10 +1418,12 @@ function attachMoneyInput(input, item, kind) {
 function updateTotalsRealtime() {
     const values = collectValues();
 
-    localStorage.setItem(
-        "myAssetValues_" + selectedDate,
-        JSON.stringify(values)
-    );
+    if (currentUser) {
+        localStorage.setItem(
+            "myAssetValues_" + currentUser.id + "_" + selectedDate,
+            JSON.stringify(values)
+        );
+    }
 
     tree.forEach(root => {
         (root.children || []).forEach(middle => {
@@ -1615,10 +1708,12 @@ function removeValues(ids) {
     const values = getLocalValues();
     ids.forEach(id => delete values[id]);
 
-    localStorage.setItem(
-        "myAssetValues_" + selectedDate,
-        JSON.stringify(values)
-    );
+    if (currentUser) {
+        localStorage.setItem(
+            "myAssetValues_" + currentUser.id + "_" + selectedDate,
+            JSON.stringify(values)
+        );
+    }
 }
 
 
@@ -1809,7 +1904,6 @@ function renderHome(roots, containerId, values, isDebt) {
 
 /* ==================================================
    날짜 데이터 로딩
-   ★ 개선: fallback 시 tree 덮어쓰기 제거
 ================================================== */
 
 async function loadDateData() {
@@ -1844,7 +1938,6 @@ async function loadDateData() {
                     result = {
                         success: true,
                         data: {
-                            // ★ tree는 현재 트리 유지 (덮어쓰지 않음)
                             tree: null,
                             values: mostRecent.values
                         }
@@ -1854,7 +1947,6 @@ async function loadDateData() {
         }
 
         if (result && result.success && result.data) {
-            // tree는 현재 트리 유지
             if (result.data.tree && Array.isArray(result.data.tree) && result.data.tree.length) {
                 tree = result.data.tree;
                 normalizeTree();
@@ -1863,7 +1955,7 @@ async function loadDateData() {
 
             if (result.data.values) {
                 localStorage.setItem(
-                    "myAssetValues_" + selectedDate,
+                    "myAssetValues_" + currentUser.id + "_" + selectedDate,
                     JSON.stringify(result.data.values)
                 );
             }
@@ -1901,9 +1993,10 @@ function normalizeTree() {
 
 function getLocalValues() {
     try {
-        return JSON.parse(
-            localStorage.getItem("myAssetValues_" + selectedDate) || "{}"
-        );
+        const key = currentUser
+            ? "myAssetValues_" + currentUser.id + "_" + selectedDate
+            : "myAssetValues_" + selectedDate;
+        return JSON.parse(localStorage.getItem(key) || "{}");
     } catch (e) {
         return {};
     }
@@ -2027,13 +2120,13 @@ function loadGoals() {
 
 async function loadGoalsFromSupabase() {
     const client = initSupabaseClient();
-    if (!client) return null;
+    if (!client || !currentUser) return null;
 
     try {
         const { data, error } = await client
             .from("user_goals")
             .select("net_worth, excluding_real_estate, investment, fire")
-            .eq("id", 1)
+            .eq("user_id", currentUser.id)
             .maybeSingle();
 
         if (error || !data) return null;
@@ -2053,21 +2146,21 @@ async function loadGoalsFromSupabase() {
 
 async function saveGoalsToSupabase(g) {
     const client = initSupabaseClient();
-    if (!client) return false;
+    if (!client || !currentUser) return false;
 
     try {
         const { error } = await client
             .from("user_goals")
             .upsert(
                 {
-                    id: 1,
+                    user_id: currentUser.id,
                     net_worth: g.netWorth,
                     excluding_real_estate: g.excludingRealEstate,
                     investment: g.investment,
                     fire: g.fire,
                     updated_at: new Date().toISOString()
                 },
-                { onConflict: "id" }
+                { onConflict: "user_id" }
             );
 
         if (error) {
@@ -2093,7 +2186,8 @@ function saveGoals() {
 
 function initSettings() {
     const resetBtn = document.getElementById("resetLocalButton");
-    if (resetBtn) {
+    if (resetBtn && !resetBtn.dataset.bound) {
+        resetBtn.dataset.bound = "1";
         resetBtn.addEventListener("click", async function () {
             const ok = await modalConfirm(
                 "로컬 데이터 초기화",
@@ -2116,7 +2210,8 @@ function initSettings() {
     }
 
     const goalSaveBtn = document.getElementById("goalSaveButton");
-    if (goalSaveBtn) {
+    if (goalSaveBtn && !goalSaveBtn.dataset.bound) {
+        goalSaveBtn.dataset.bound = "1";
         goalSaveBtn.addEventListener("click", async function () {
             const fields = document.querySelectorAll(".goal-input-field");
 
@@ -2146,11 +2241,25 @@ function initSettings() {
             }, 1200);
         });
     }
+
+    const logoutBtn = document.getElementById("logoutButton");
+    if (logoutBtn && !logoutBtn.dataset.bound) {
+        logoutBtn.dataset.bound = "1";
+        logoutBtn.addEventListener("click", async () => {
+            const ok = await modalConfirm(
+                "로그아웃",
+                "로그아웃 하시겠습니까?",
+                { confirmText: "로그아웃", danger: true }
+            );
+            if (!ok) return;
+
+            await supabaseClient.auth.signOut();
+        });
+    }
 }
 
 
 async function renderSettings() {
-    // ★ 중복 렌더 가드
     if (isRenderingSettings) return;
     isRenderingSettings = true;
 
@@ -2164,6 +2273,11 @@ async function renderSettings() {
         renderGoalSettings();
         renderAnalysisSettings();
         initSettingsAccordion();
+
+        const accountEmail = document.getElementById("accountEmail");
+        if (accountEmail && currentUser) {
+            accountEmail.textContent = currentUser.email || "-";
+        }
     } finally {
         isRenderingSettings = false;
     }
@@ -2294,7 +2408,6 @@ function moveAnalysis(index, dir) {
 
 /* ==================================================
    ANALYSIS RENDER
-   ★ 개선: requestAnimationFrame 2회로 차트 타이밍 안전화
 ================================================== */
 
 function nextFrame(fn) {
@@ -3075,7 +3188,6 @@ function drawCandleChart() {
 
 /* ==================================================
    Line chart
-   ★ 개선: minValue 음수 허용
 ================================================== */
 
 function createLineChart(options) {
@@ -3111,11 +3223,9 @@ function createLineChart(options) {
     if (maxValue === -Infinity) maxValue = 100;
     if (minValue === Infinity) minValue = 0;
 
-    // ★ 음수 허용: 0을 기준선으로 포함
     if (minValue > 0) minValue = 0;
     if (maxValue < 0) maxValue = 0;
 
-    // 양쪽 여유
     const range = (maxValue - minValue) || 1;
     const paddedMax = maxValue + range * 0.12;
     const paddedMin = minValue - range * 0.12;
@@ -3243,7 +3353,6 @@ function createLineChart(options) {
 
 /* ==================================================
    Candle chart
-   ★ 개선: 순자산 변동 막대로 명확화
 ================================================== */
 
 function createCandleChart(container, data) {
@@ -3483,7 +3592,6 @@ function formatFullDate(date) {
 
 /* ==================================================
    INVESTMENT
-   ★ 개선: child_id 컬럼 사용, selectedDate 이하 최신값
 ================================================== */
 
 async function renderInvestment() {
@@ -3509,7 +3617,7 @@ async function renderInvestment() {
 
 async function loadBuyAmounts() {
     const client = initSupabaseClient();
-    if (!client) {
+    if (!client || !currentUser) {
         buyAmounts = {};
         return;
     }
@@ -3517,6 +3625,7 @@ async function loadBuyAmounts() {
     const { data, error } = await client
         .from("investment_holdings")
         .select("id, middle_id, child_id, buy_amount")
+        .eq("user_id", currentUser.id)
         .order("id", { ascending: true });
 
     if (error) {
@@ -3528,7 +3637,6 @@ async function loadBuyAmounts() {
     buyAmounts = {};
 
     (data || []).forEach(row => {
-        // ★ child_id 기준 (기존 name 컬럼과 호환)
         const key = row.child_id || row.name || row.id;
         buyAmounts[key] = {
             id: row.id,
@@ -3543,16 +3651,16 @@ async function loadBuyAmounts() {
 
 async function loadLatestValues() {
     const client = initSupabaseClient();
-    if (!client) {
+    if (!client || !currentUser) {
         latestValuesCache = {};
         latestValuesDate = null;
         return;
     }
 
-    // ★ selectedDate 이하 최신값 사용
     const { data, error } = await client
         .from("asset_records")
         .select("base_date, values")
+        .eq("user_id", currentUser.id)
         .lte("base_date", selectedDate)
         .order("base_date", { ascending: false })
         .limit(1)
@@ -3563,14 +3671,15 @@ async function loadLatestValues() {
         latestValuesDate = null;
 
         try {
+            const prefix = "myAssetValues_" + currentUser.id + "_";
             const localKeys = Object.keys(localStorage)
-                .filter(k => k.startsWith("myAssetValues_"))
+                .filter(k => k.startsWith(prefix))
                 .sort()
                 .reverse();
 
             if (localKeys.length > 0) {
                 latestValuesCache = JSON.parse(localStorage.getItem(localKeys[0]) || "{}");
-                latestValuesDate = localKeys[0].replace("myAssetValues_", "");
+                latestValuesDate = localKeys[0].replace(prefix, "");
             }
         } catch (e) { /* ignore */ }
 
@@ -3774,8 +3883,8 @@ function createHoldingRow(child, middle) {
 
 async function openBuyAmountEditor(child, middle) {
     const client = initSupabaseClient();
-    if (!client) {
-        await modalAlert("오류", "서버에 연결할 수 없습니다.");
+    if (!client || !currentUser) {
+        await modalAlert("오류", "로그인이 필요합니다.");
         return;
     }
 
@@ -3800,7 +3909,8 @@ async function openBuyAmountEditor(child, middle) {
                 middle_id: middle.id,
                 child_id: child.id
             })
-            .eq("id", existing.id);
+            .eq("id", existing.id)
+            .eq("user_id", currentUser.id);
 
         if (error) {
             console.error("update buy error:", error);
@@ -3811,6 +3921,7 @@ async function openBuyAmountEditor(child, middle) {
         const { data, error } = await client
             .from("investment_holdings")
             .insert({
+                user_id: currentUser.id,
                 middle_id: middle.id,
                 child_id: child.id,
                 buy_amount: buyAmount
@@ -3857,14 +3968,16 @@ window.addEventListener("resize", function () {
         if (document.getElementById("candleChart"))         drawCandleChart();
     }, 250);
 });
+
+
 /* ==================================================
    SERVICE WORKER (PWA)
 ================================================== */
 
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker
-      .register("./sw.js")
-      .catch((e) => console.warn("SW register failed:", e));
-  });
+    window.addEventListener("load", () => {
+        navigator.serviceWorker
+            .register("./sw.js")
+            .catch((e) => console.warn("SW register failed:", e));
+    });
 }
