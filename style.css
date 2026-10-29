@@ -1982,3 +1982,8 @@ button {
     min-height: 20px;
     line-height: 1.5;
 }
+
+.login-btn.secondary {
+    background: #f1f2f4;
+    color: #171717;
+}

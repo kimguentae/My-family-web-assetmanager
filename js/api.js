@@ -238,40 +238,108 @@ function showLoginScreen() {
     if (appRoot) appRoot.style.display = "none";
 
     const emailInput = document.getElementById("loginEmail");
+    const passwordInput = document.getElementById("loginPassword");
     const loginBtn = document.getElementById("loginBtn");
+    const signupBtn = document.getElementById("signupBtn");
     const loginMsg = document.getElementById("loginMsg");
 
-    if (!emailInput || !loginBtn) return;
+    if (!emailInput || !passwordInput || !loginBtn) return;
 
-    emailInput.addEventListener("keydown", (e) => {
+    function setMsg(text) {
+        if (loginMsg) loginMsg.textContent = text || "";
+    }
+
+    function validate() {
+        const email = emailInput.value.trim();
+        const password = passwordInput.value;
+
+        if (!email) {
+            setMsg("이메일을 입력해주세요.");
+            return null;
+        }
+        if (!password || password.length < 6) {
+            setMsg("비밀번호는 6자 이상이어야 합니다.");
+            return null;
+        }
+        return { email, password };
+    }
+
+    // ★ 로그인
+    async function doLogin() {
+        const creds = validate();
+        if (!creds) return;
+
+        loginBtn.disabled = true;
+        signupBtn.disabled = true;
+        loginBtn.textContent = "로그인 중...";
+        setMsg("");
+
+        const { error } = await supabaseClient.auth.signInWithPassword({
+            email: creds.email,
+            password: creds.password,
+        });
+
+        loginBtn.disabled = false;
+        signupBtn.disabled = false;
+        loginBtn.textContent = "로그인";
+
+        if (error) {
+            setMsg("로그인 실패: " + error.message);
+            return;
+        }
+
+        // 로그인 성공 → 앱 재로드
+        location.reload();
+    }
+
+    // ★ 회원가입
+    async function doSignup() {
+        const creds = validate();
+        if (!creds) return;
+
+        loginBtn.disabled = true;
+        signupBtn.disabled = true;
+        signupBtn.textContent = "가입 중...";
+        setMsg("");
+
+        const { data, error } = await supabaseClient.auth.signUp({
+            email: creds.email,
+            password: creds.password,
+        });
+
+        loginBtn.disabled = false;
+        signupBtn.disabled = false;
+        signupBtn.textContent = "회원가입";
+
+        if (error) {
+            setMsg("회원가입 실패: " + error.message);
+            return;
+        }
+
+        // Confirm email OFF면 세션이 바로 생김
+        if (data && data.session) {
+            setMsg("가입 완료! 로그인 중...");
+            setTimeout(() => location.reload(), 500);
+        } else {
+            // 혹시 이메일 확인이 켜져 있으면 안내
+            setMsg("가입 요청 완료. 이메일 인증이 필요할 수 있습니다. Supabase에서 Confirm email을 OFF로 설정하세요.");
+        }
+    }
+
+    loginBtn.addEventListener("click", doLogin);
+    signupBtn.addEventListener("click", doSignup);
+
+    // Enter 키로 로그인
+    passwordInput.addEventListener("keydown", (e) => {
         if (e.key === "Enter") {
             e.preventDefault();
             loginBtn.click();
         }
     });
-
-    loginBtn.addEventListener("click", async () => {
-        const email = emailInput.value.trim();
-        if (!email) return;
-
-        loginBtn.disabled = true;
-        loginBtn.textContent = "전송 중...";
-        if (loginMsg) loginMsg.textContent = "";
-
-        const { error } = await supabaseClient.auth.signInWithOtp({
-            email,
-            options: {
-                emailRedirectTo: window.location.origin,
-            },
-        });
-
-        loginBtn.disabled = false;
-        loginBtn.textContent = "로그인 링크 받기";
-
-        if (loginMsg) {
-            loginMsg.textContent = error
-                ? "오류: " + error.message
-                : "이메일을 확인해주세요! 링크를 클릭하면 로그인됩니다.";
+    emailInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            passwordInput.focus();
         }
     });
 }

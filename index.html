@@ -52,8 +52,8 @@
 
         <h1 class="login-logo">MY ASSET</h1>
 
-        <p class="login-desc">
-            이메일로 로그인 링크를 보내드립니다.
+        <p class="login-desc" id="loginDesc">
+            이메일과 비밀번호로 로그인하세요.
         </p>
 
         <input
@@ -64,8 +64,20 @@
             autocomplete="email"
         >
 
+        <input
+            type="password"
+            class="login-input"
+            id="loginPassword"
+            placeholder="비밀번호 (6자 이상)"
+            autocomplete="current-password"
+        >
+
         <button type="button" class="login-btn" id="loginBtn">
-            로그인 링크 받기
+            로그인
+        </button>
+
+        <button type="button" class="login-btn secondary" id="signupBtn" style="background:#f1f2f4; color:#171717; margin-top:8px;">
+            회원가입
         </button>
 
         <p class="login-msg" id="loginMsg"></p>
