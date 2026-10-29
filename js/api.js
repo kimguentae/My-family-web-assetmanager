@@ -1,5 +1,5 @@
 /* ==================================================
-   MY ASSET
+   MY ASSET - api.js (개선판)
 ================================================== */
 
 
@@ -10,10 +10,28 @@
 const SUPABASE_URL = "https://ozejxesdcuyypkrxamnd.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im96ZWp4ZXNkY3V5eXBrcnhhbW5kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk1NjE3MjksImV4cCI6MjEwNTEzNzcyOX0.Fcxd4ScWmJn7ZmfSmFyrNOX0MvXoZBSDn52uLV8R3GQ";
 
-const supabaseClient = window.supabase.createClient(
-    SUPABASE_URL,
-    SUPABASE_ANON_KEY
-);
+let supabaseClient = null;
+
+function initSupabaseClient() {
+    if (supabaseClient) return supabaseClient;
+
+    if (!window.supabase || !window.supabase.createClient) {
+        console.error("Supabase SDK가 로드되지 않았습니다.");
+        return null;
+    }
+
+    try {
+        supabaseClient = window.supabase.createClient(
+            SUPABASE_URL,
+            SUPABASE_ANON_KEY
+        );
+    } catch (e) {
+        console.error("Supabase 클라이언트 생성 실패:", e);
+        supabaseClient = null;
+    }
+
+    return supabaseClient;
+}
 
 
 /* ==================================================
@@ -97,7 +115,7 @@ const ANALYSIS_SECTIONS = [
     { id: "metricCards",      name: "핵심 지표 카드",           defaultOn: true },
     { id: "netWorthChart",    name: "순자산 · 자산 · 부채 추이", defaultOn: true },
     { id: "donutAsset",       name: "자산 구성 도넛",           defaultOn: true },
-    { id: "candleChart",      name: "순자산 캔들",              defaultOn: true },
+    { id: "candleChart",      name: "순자산 변동",              defaultOn: true },
     { id: "investmentChart",  name: "투자자산 변동",            defaultOn: true },
     { id: "contribution",     name: "자산 증가 기여도",         defaultOn: true },
     { id: "allocation",       name: "자산배분 비중 추이",       defaultOn: true },
@@ -130,12 +148,17 @@ let buyAmountsLoaded = false;
 let latestValuesCache = {};
 let latestValuesDate = null;
 
+// 렌더 가드
+let isRenderingSettings = false;
+
 
 /* ==================================================
    시작
 ================================================== */
 
 document.addEventListener("DOMContentLoaded", async function () {
+
+    initSupabaseClient();
 
     normalizeTree();
 
@@ -249,7 +272,7 @@ function initNavigation() {
             }
 
             if (page === "analysis") renderAnalysis();
-            if (page === "settings") renderSettings();  // async지만 await 안 해도 됨
+            if (page === "settings") renderSettings();
             if (page === "detail")   renderInvestment();
 
         });
@@ -395,8 +418,11 @@ async function saveAll() {
 ================================================== */
 
 async function saveToSupabase(data) {
+    const client = initSupabaseClient();
+    if (!client) return { success: false, error: "no client" };
+
     try {
-        const { error } = await supabaseClient
+        const { error } = await client
             .from("asset_records")
             .upsert(
                 {
@@ -422,8 +448,11 @@ async function saveToSupabase(data) {
 
 
 async function loadFromSupabase(date) {
+    const client = initSupabaseClient();
+    if (!client) return { success: false, error: "no client" };
+
     try {
-        const { data, error } = await supabaseClient
+        const { data, error } = await client
             .from("asset_records")
             .select("values, tree")
             .eq("base_date", date)
@@ -454,8 +483,11 @@ async function loadFromSupabase(date) {
 
 
 async function loadHistoryFromSupabase() {
+    const client = initSupabaseClient();
+    if (!client) return { success: false, error: "no client" };
+
     try {
-        const { data, error } = await supabaseClient
+        const { data, error } = await client
             .from("asset_records")
             .select("base_date, values, tree")
             .order("base_date", { ascending: true });
@@ -1777,6 +1809,7 @@ function renderHome(roots, containerId, values, isDebt) {
 
 /* ==================================================
    날짜 데이터 로딩
+   ★ 개선: fallback 시 tree 덮어쓰기 제거
 ================================================== */
 
 async function loadDateData() {
@@ -1811,7 +1844,8 @@ async function loadDateData() {
                     result = {
                         success: true,
                         data: {
-                            tree: mostRecent.tree,
+                            // ★ tree는 현재 트리 유지 (덮어쓰지 않음)
+                            tree: null,
                             values: mostRecent.values
                         }
                     };
@@ -1820,6 +1854,7 @@ async function loadDateData() {
         }
 
         if (result && result.success && result.data) {
+            // tree는 현재 트리 유지
             if (result.data.tree && Array.isArray(result.data.tree) && result.data.tree.length) {
                 tree = result.data.tree;
                 normalizeTree();
@@ -1974,7 +2009,6 @@ function saveAnalysisConfig() {
 ================================================== */
 
 function loadGoals() {
-    // 로컬 캐시 (즉시 반환용)
     try {
         const stored = JSON.parse(localStorage.getItem("myAssetGoals") || "null");
         if (stored && typeof stored === "object") {
@@ -1992,8 +2026,11 @@ function loadGoals() {
 
 
 async function loadGoalsFromSupabase() {
+    const client = initSupabaseClient();
+    if (!client) return null;
+
     try {
-        const { data, error } = await supabaseClient
+        const { data, error } = await client
             .from("user_goals")
             .select("net_worth, excluding_real_estate, investment, fire")
             .eq("id", 1)
@@ -2015,8 +2052,11 @@ async function loadGoalsFromSupabase() {
 
 
 async function saveGoalsToSupabase(g) {
+    const client = initSupabaseClient();
+    if (!client) return false;
+
     try {
-        const { error } = await supabaseClient
+        const { error } = await client
             .from("user_goals")
             .upsert(
                 {
@@ -2075,7 +2115,7 @@ function initSettings() {
         });
     }
 
-      const goalSaveBtn = document.getElementById("goalSaveButton");
+    const goalSaveBtn = document.getElementById("goalSaveButton");
     if (goalSaveBtn) {
         goalSaveBtn.addEventListener("click", async function () {
             const fields = document.querySelectorAll(".goal-input-field");
@@ -2086,7 +2126,6 @@ function initSettings() {
                 goals[key] = Number(raw) || 0;
             });
 
-            // 로컬 저장 (즉시 반영)
             saveGoals();
 
             goalSaveBtn.disabled = true;
@@ -2111,16 +2150,23 @@ function initSettings() {
 
 
 async function renderSettings() {
-    // Supabase에서 최신 목표 불러오기
-    const remoteGoals = await loadGoalsFromSupabase();
-    if (remoteGoals) {
-        goals = remoteGoals;
-        saveGoals(); // 로컬 캐시도 갱신
-    }
+    // ★ 중복 렌더 가드
+    if (isRenderingSettings) return;
+    isRenderingSettings = true;
 
-    renderGoalSettings();
-    renderAnalysisSettings();
-    initSettingsAccordion();
+    try {
+        const remoteGoals = await loadGoalsFromSupabase();
+        if (remoteGoals) {
+            goals = remoteGoals;
+            saveGoals();
+        }
+
+        renderGoalSettings();
+        renderAnalysisSettings();
+        initSettingsAccordion();
+    } finally {
+        isRenderingSettings = false;
+    }
 }
 
 
@@ -2248,7 +2294,13 @@ function moveAnalysis(index, dir) {
 
 /* ==================================================
    ANALYSIS RENDER
+   ★ 개선: requestAnimationFrame 2회로 차트 타이밍 안전화
 ================================================== */
+
+function nextFrame(fn) {
+    requestAnimationFrame(() => requestAnimationFrame(fn));
+}
+
 
 async function renderAnalysis() {
     const container = document.getElementById("analysisContainer");
@@ -2302,7 +2354,7 @@ async function renderAnalysis() {
                             { cls: "debt-line",  label: "부채" }
                         ]
                     ));
-                    setTimeout(() => drawNetWorthChart(), 0);
+                    nextFrame(() => drawNetWorthChart());
                     break;
 
                 case "donutAsset":
@@ -2310,8 +2362,8 @@ async function renderAnalysis() {
                     break;
 
                 case "candleChart":
-                    container.appendChild(createChartCard("순자산 캔들", "candleChart"));
-                    setTimeout(() => drawCandleChart(), 0);
+                    container.appendChild(createChartCard("순자산 변동", "candleChart"));
+                    nextFrame(() => drawCandleChart());
                     break;
 
                 case "investmentChart": {
@@ -2329,7 +2381,7 @@ async function renderAnalysis() {
                         gotoInvestmentPage();
                     });
                     container.appendChild(invCard);
-                    setTimeout(() => drawInvestmentChart(), 0);
+                    nextFrame(() => drawInvestmentChart());
                     break;
                 }
 
@@ -2348,7 +2400,7 @@ async function renderAnalysis() {
                             { cls: "etc-line",        label: "기타" }
                         ]
                     ));
-                    setTimeout(() => drawAllocationChart(), 0);
+                    nextFrame(() => drawAllocationChart());
                     break;
 
                 case "goalProgress":
@@ -2551,7 +2603,6 @@ function createMetricCards() {
             ${deltaHTML}
         `;
 
-        // 클릭 시 이동 (투자자산만)
         if (item.link === "investment") {
             el.classList.add("clickable-metric");
             el.addEventListener("click", function () {
@@ -3024,6 +3075,7 @@ function drawCandleChart() {
 
 /* ==================================================
    Line chart
+   ★ 개선: minValue 음수 허용
 ================================================== */
 
 function createLineChart(options) {
@@ -3045,7 +3097,7 @@ function createLineChart(options) {
     const chartWidth = width - padding.left - padding.right;
     const chartHeight = height - padding.top - padding.bottom;
 
-    let maxValue = 0;
+    let maxValue = -Infinity;
     let minValue = Infinity;
 
     options.data.forEach(point => {
@@ -3056,12 +3108,17 @@ function createLineChart(options) {
         });
     });
 
-    if (maxValue <= 0) maxValue = 100;
+    if (maxValue === -Infinity) maxValue = 100;
     if (minValue === Infinity) minValue = 0;
-    if (minValue > 0) minValue = 0;
 
-    const range = maxValue - minValue || 1;
+    // ★ 음수 허용: 0을 기준선으로 포함
+    if (minValue > 0) minValue = 0;
+    if (maxValue < 0) maxValue = 0;
+
+    // 양쪽 여유
+    const range = (maxValue - minValue) || 1;
     const paddedMax = maxValue + range * 0.12;
+    const paddedMin = minValue - range * 0.12;
 
     const ns = "http://www.w3.org/2000/svg";
     const svg = document.createElementNS(ns, "svg");
@@ -3088,7 +3145,7 @@ function createLineChart(options) {
         line.setAttribute("class", "chart-grid-line");
         svg.appendChild(line);
 
-        const value = paddedMax - (paddedMax - minValue) * ratio;
+        const value = paddedMax - (paddedMax - paddedMin) * ratio;
 
         const text = document.createElementNS(ns, "text");
         text.setAttribute("x", padding.left - 7);
@@ -3105,7 +3162,7 @@ function createLineChart(options) {
     }
 
     function getY(value) {
-        const ratio = (paddedMax - value) / (paddedMax - minValue);
+        const ratio = (paddedMax - value) / (paddedMax - paddedMin);
         return padding.top + chartHeight * ratio;
     }
 
@@ -3186,6 +3243,7 @@ function createLineChart(options) {
 
 /* ==================================================
    Candle chart
+   ★ 개선: 순자산 변동 막대로 명확화
 ================================================== */
 
 function createCandleChart(container, data) {
@@ -3197,7 +3255,7 @@ function createCandleChart(container, data) {
     const chartWidth = width - padding.left - padding.right;
     const chartHeight = height - padding.top - padding.bottom;
 
-    let maxValue = 0;
+    let maxValue = -Infinity;
     let minValue = Infinity;
 
     data.forEach(d => {
@@ -3205,12 +3263,15 @@ function createCandleChart(container, data) {
         if (d.value < minValue) minValue = d.value;
     });
 
-    if (maxValue <= 0) maxValue = 100;
+    if (maxValue === -Infinity) maxValue = 100;
     if (minValue === Infinity) minValue = 0;
-    if (minValue > 0) minValue = 0;
 
-    const range = maxValue - minValue || 1;
+    if (minValue > 0) minValue = 0;
+    if (maxValue < 0) maxValue = 0;
+
+    const range = (maxValue - minValue) || 1;
     const paddedMax = maxValue + range * 0.12;
+    const paddedMin = minValue - range * 0.12;
 
     const ns = "http://www.w3.org/2000/svg";
     const svg = document.createElementNS(ns, "svg");
@@ -3236,7 +3297,7 @@ function createCandleChart(container, data) {
         line.setAttribute("class", "chart-grid-line");
         svg.appendChild(line);
 
-        const value = paddedMax - (paddedMax - minValue) * ratio;
+        const value = paddedMax - (paddedMax - paddedMin) * ratio;
 
         const text = document.createElementNS(ns, "text");
         text.setAttribute("x", padding.left - 7);
@@ -3248,18 +3309,18 @@ function createCandleChart(container, data) {
     }
 
     function getY(value) {
-        const ratio = (paddedMax - value) / (paddedMax - minValue);
+        const ratio = (paddedMax - value) / (paddedMax - paddedMin);
         return padding.top + chartHeight * ratio;
     }
 
-    const candleGap = 6;
-    const candleWidth = Math.max(
+    const gap = 6;
+    const barWidth = Math.max(
         6,
-        (chartWidth - candleGap * (data.length - 1)) / data.length
+        (chartWidth - gap * (data.length - 1)) / data.length
     );
 
     function getCX(index) {
-        return padding.left + index * (candleWidth + candleGap) + candleWidth / 2;
+        return padding.left + index * (barWidth + gap) + barWidth / 2;
     }
 
     data.forEach((point, index) => {
@@ -3289,9 +3350,9 @@ function createCandleChart(container, data) {
         svg.appendChild(wick);
 
         const rect = document.createElementNS(ns, "rect");
-        rect.setAttribute("x", cx - candleWidth / 2);
+        rect.setAttribute("x", cx - barWidth / 2);
         rect.setAttribute("y", bodyTop);
-        rect.setAttribute("width", candleWidth);
+        rect.setAttribute("width", barWidth);
         rect.setAttribute("height", bodyHeight);
         rect.setAttribute("rx", 2);
         rect.setAttribute("fill", isUp ? "#eb5757" : "#2f80ed");
@@ -3315,9 +3376,9 @@ function createCandleChart(container, data) {
         }
 
         const hit = document.createElementNS(ns, "rect");
-        hit.setAttribute("x", cx - candleWidth / 2 - 3);
+        hit.setAttribute("x", cx - barWidth / 2 - 3);
         hit.setAttribute("y", padding.top);
-        hit.setAttribute("width", candleWidth + 6);
+        hit.setAttribute("width", barWidth + 6);
         hit.setAttribute("height", chartHeight);
         hit.setAttribute("fill", "transparent");
         hit.setAttribute("class", "chart-point-hit");
@@ -3422,6 +3483,7 @@ function formatFullDate(date) {
 
 /* ==================================================
    INVESTMENT
+   ★ 개선: child_id 컬럼 사용, selectedDate 이하 최신값
 ================================================== */
 
 async function renderInvestment() {
@@ -3446,9 +3508,15 @@ async function renderInvestment() {
 
 
 async function loadBuyAmounts() {
-    const { data, error } = await supabaseClient
+    const client = initSupabaseClient();
+    if (!client) {
+        buyAmounts = {};
+        return;
+    }
+
+    const { data, error } = await client
         .from("investment_holdings")
-        .select("id, middle_id, name, buy_amount")
+        .select("id, middle_id, child_id, buy_amount")
         .order("id", { ascending: true });
 
     if (error) {
@@ -3460,7 +3528,9 @@ async function loadBuyAmounts() {
     buyAmounts = {};
 
     (data || []).forEach(row => {
-        buyAmounts[row.name] = {
+        // ★ child_id 기준 (기존 name 컬럼과 호환)
+        const key = row.child_id || row.name || row.id;
+        buyAmounts[key] = {
             id: row.id,
             middleId: row.middle_id,
             buyAmount: Number(row.buy_amount) || 0
@@ -3472,9 +3542,18 @@ async function loadBuyAmounts() {
 
 
 async function loadLatestValues() {
-    const { data, error } = await supabaseClient
+    const client = initSupabaseClient();
+    if (!client) {
+        latestValuesCache = {};
+        latestValuesDate = null;
+        return;
+    }
+
+    // ★ selectedDate 이하 최신값 사용
+    const { data, error } = await client
         .from("asset_records")
         .select("base_date, values")
+        .lte("base_date", selectedDate)
         .order("base_date", { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -3694,6 +3773,12 @@ function createHoldingRow(child, middle) {
 
 
 async function openBuyAmountEditor(child, middle) {
+    const client = initSupabaseClient();
+    if (!client) {
+        await modalAlert("오류", "서버에 연결할 수 없습니다.");
+        return;
+    }
+
     const existing = buyAmounts[child.id];
     const initial = existing ? Number(existing.buyAmount) || 0 : 0;
 
@@ -3708,12 +3793,12 @@ async function openBuyAmountEditor(child, middle) {
     const buyAmount = Number(result) || 0;
 
     if (existing && existing.id) {
-        const { error } = await supabaseClient
+        const { error } = await client
             .from("investment_holdings")
             .update({
                 buy_amount: buyAmount,
                 middle_id: middle.id,
-                name: child.id
+                child_id: child.id
             })
             .eq("id", existing.id);
 
@@ -3723,11 +3808,11 @@ async function openBuyAmountEditor(child, middle) {
             return;
         }
     } else {
-        const { data, error } = await supabaseClient
+        const { data, error } = await client
             .from("investment_holdings")
             .insert({
                 middle_id: middle.id,
-                name: child.id,
+                child_id: child.id,
                 buy_amount: buyAmount
             })
             .select()
